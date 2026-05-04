@@ -5,7 +5,16 @@ from app.config import settings
 
 
 class BackendAPIError(Exception):
-    pass
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        body: Any = None,
+    ):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.body = body
 
 
 class BackendClient:
@@ -28,11 +37,12 @@ class BackendClient:
         headers: dict | None = None,
     ) -> Any:
         url = self._make_url(endpoint)
+        method = method.upper()
 
         try:
             async with aiohttp.ClientSession(timeout=self.timeout) as session:
                 async with session.request(
-                    method=method.upper(),
+                    method=method,
                     url=url,
                     params=params,
                     json=json,
@@ -48,9 +58,13 @@ class BackendClient:
                             error_body = await response.text()
 
                         raise BackendAPIError(
-                            f"Backend request failed | "
-                            f"method={method.upper()} url={url} "
-                            f"status={response.status} body={error_body}"
+                            message=(
+                                f"Backend request failed | "
+                                f"method={method} url={url} "
+                                f"status={response.status} body={error_body}"
+                            ),
+                            status_code=response.status,
+                            body=error_body,
                         )
 
                     if "application/json" in content_type:
@@ -59,7 +73,11 @@ class BackendClient:
                     return await response.text()
 
         except aiohttp.ClientError as e:
-            raise BackendAPIError(f"Connection error while calling {url}: {e}") from e
+            raise BackendAPIError(
+                message=f"Connection error while calling {url}: {e}",
+                status_code=None,
+                body=None,
+            ) from e
 
     async def get(
         self,
@@ -98,15 +116,23 @@ class BackendClient:
                             error_body = await response.text()
 
                         raise BackendAPIError(
-                            f"Backend raw request failed | "
-                            f"method=GET url={url} "
-                            f"status={response.status} body={error_body}"
+                            message=(
+                                f"Backend raw request failed | "
+                                f"method=GET url={url} "
+                                f"status={response.status} body={error_body}"
+                            ),
+                            status_code=response.status,
+                            body=error_body,
                         )
 
                     return await response.read()
 
         except aiohttp.ClientError as e:
-            raise BackendAPIError(f"Connection error while calling {url}: {e}") from e
+            raise BackendAPIError(
+                message=f"Connection error while calling {url}: {e}",
+                status_code=None,
+                body=None,
+            ) from e
 
     async def post(
         self,

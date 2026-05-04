@@ -2,15 +2,23 @@ from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
-from app.infrastructure.backend.bot_user_api import register_or_update_user
-from app.infrastructure.backend.client import BackendAPIError
-from app.features.auth.permissions import is_admin_user, is_registered_user
-from app.features.auth.states import RegisterStates
-from app.shared.keyboards.contact import get_contact_keyboard
-from app.shared.keyboards.remove import remove_keyboard
-from app.shared.keyboards.main_menu import get_main_menu_keyboard
-from app.infrastructure.backend.bot_user_api import get_user_status
+from app.infrastructure.backend.bot_user_api import create_company_profile, create_jobseeker_profile
+
 import traceback
+
+from app.features.auth.permissions import (
+    is_admin_user,
+    is_registered_user,
+    extract_menu_flags,
+)
+from app.features.auth.states import RegisterStates
+from app.infrastructure.backend.bot_user_api import (
+    get_user_status,
+    register_or_update_user,
+)
+from app.infrastructure.backend.client import BackendAPIError
+from app.shared.keyboards.contact import get_contact_keyboard
+from app.shared.keyboards.main_menu import get_main_menu_keyboard
 
 router = Router()
 
@@ -21,7 +29,6 @@ async def start_handler(message: Message, state: FSMContext):
 
     try:
         status_response = await get_user_status(message)
-
     except Exception as e:
         print("Get user status error:", e)
         traceback.print_exc()
@@ -32,12 +39,12 @@ async def start_handler(message: Message, state: FSMContext):
         return
 
     if is_registered_user(status_response):
-        is_admin = is_admin_user(status_response)
+        menu_flags = extract_menu_flags(status_response)
 
         await message.answer(
             "خوش آمدید 👋\n"
             "از منوی زیر یکی از گزینه‌ها را انتخاب کنید:",
-            reply_markup=get_main_menu_keyboard(is_admin=is_admin)
+            reply_markup=get_main_menu_keyboard(**menu_flags),
         )
         return
 
@@ -45,8 +52,8 @@ async def start_handler(message: Message, state: FSMContext):
         "برای استفاده از ربات ابتدا باید ثبت‌نام کنید.\n"
         "لطفاً نام و نام خانوادگی خود را وارد کنید."
     )
-
     await state.set_state(RegisterStates.waiting_for_full_name)
+
 
 @router.message(RegisterStates.waiting_for_full_name, F.text)
 async def get_full_name_handler(message: Message, state: FSMContext):
@@ -59,8 +66,9 @@ async def get_full_name_handler(message: Message, state: FSMContext):
     await state.update_data(full_name=full_name)
 
     await message.answer(
-        "ممنون 🌱\nحالا لطفاً شماره موبایل خود را با دکمه زیر ارسال کنید.",
-        reply_markup=get_contact_keyboard()
+        "ممنون 🌱\n"
+        "حالا لطفاً شماره موبایل خود را با دکمه زیر ارسال کنید.",
+        reply_markup=get_contact_keyboard(),
     )
 
     await state.set_state(RegisterStates.waiting_for_phone_number)
@@ -71,7 +79,17 @@ async def get_phone_contact_handler(message: Message, state: FSMContext):
     contact = message.contact
 
     if not contact or not contact.phone_number:
-        await message.answer("شماره موبایل دریافت نشد. لطفاً دوباره تلاش کنید.")
+        await message.answer(
+            "شماره موبایل دریافت نشد. لطفاً دوباره تلاش کنید.",
+            reply_markup=get_contact_keyboard(),
+        )
+        return
+
+    if message.from_user and contact.user_id and contact.user_id != message.from_user.id:
+        await message.answer(
+            "لطفاً فقط شماره موبایل متعلق به خودتان را ارسال کنید.",
+            reply_markup=get_contact_keyboard(),
+        )
         return
 
     await state.update_data(phone_number=contact.phone_number)
@@ -79,12 +97,14 @@ async def get_phone_contact_handler(message: Message, state: FSMContext):
 
     full_name = data.get("full_name")
     phone_number = data.get("phone_number")
+    user_id = message.from_user.id if message.from_user else None
 
     try:
         backend_response = await register_or_update_user(
             message=message,
             registered_full_name=full_name,
             phone_number=phone_number,
+            user_id=user_id,
         )
 
     except BackendAPIError as e:
@@ -106,7 +126,9 @@ async def get_phone_contact_handler(message: Message, state: FSMContext):
         return
 
     is_admin = is_admin_user(backend_response)
-
+    menu_flags = extract_menu_flags(backend_response)
+    menu_flags["is_bot_bale_member"] = True
+    await state.set_state(RegisterStates.choose_type_of_customer)
     user = message.from_user
 
     await message.answer(
@@ -120,17 +142,64 @@ async def get_phone_contact_handler(message: Message, state: FSMContext):
         f"شماره موبایل: {phone_number or '-'}\n"
         f"نقش کاربر: {'مدیر' if is_admin else 'مشتری'}\n\n"
         "از منوی زیر یکی از گزینه‌ها را انتخاب کنید:",
-        reply_markup=get_main_menu_keyboard(is_admin=is_admin)
+        reply_markup=get_main_menu_keyboard(**menu_flags),
     )
 
-    await state.clear()
-
-
+    
 
 
 @router.message(RegisterStates.waiting_for_phone_number)
 async def invalid_phone_input_handler(message: Message):
     await message.answer(
         "لطفاً شماره موبایل را فقط از طریق دکمه «ارسال شماره موبایل» ارسال کنید.",
-        reply_markup=get_contact_keyboard()
+        reply_markup=get_contact_keyboard(),
     )
+
+
+
+@router.message(RegisterStates.choose_type_of_customer, F.text == "کارجو")
+async def choose_jobseeker_handler(message: Message, state: FSMContext):
+    try:
+        backend_response = await create_jobseeker_profile(message)
+
+    except Exception as e:
+        print("Create jobseeker profile error:", e)
+        await message.answer(
+            "فعلاً امکان ساخت پروفایل کارجو وجود ندارد. لطفاً دوباره تلاش کنید."
+        )
+        return
+
+    menu_flags = extract_menu_flags(backend_response)
+    menu_flags["is_bot_bale_member"] = True
+    menu_flags["is_jobseeker_member"] = True
+
+    await message.answer(
+        "پروفایل کارجویی شما با موفقیت ساخته شد ✅",
+        reply_markup=get_main_menu_keyboard(**menu_flags),
+    )
+
+    await state.clear()
+
+
+@router.message(RegisterStates.choose_type_of_customer, F.text == "کارفرما")
+async def choose_company_handler(message: Message, state: FSMContext):
+    try:
+        backend_response = await create_company_profile(message)
+
+    except Exception as e:
+        print("Create company profile error:", e)
+        await message.answer(
+            "فعلاً امکان ساخت پروفایل کارفرما وجود ندارد. لطفاً دوباره تلاش کنید."
+        )
+        return
+
+    menu_flags = extract_menu_flags(backend_response)
+    menu_flags["is_bot_bale_member"] = True
+    menu_flags["is_company_member"] = True
+
+    await message.answer(
+        "پروفایل کارفرمایی شما با موفقیت ساخته شد ✅",
+        reply_markup=get_main_menu_keyboard(**menu_flags),
+    )
+
+    await state.clear()

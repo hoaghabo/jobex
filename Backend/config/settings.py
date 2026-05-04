@@ -39,17 +39,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'django.contrib.postgres',
     'rest_framework',
     "rest_framework_simplejwt",
     "corsheaders",
-
-    "apps.messaging.apps.MessagingConfig",
-    "apps.messaging.channels.sms.apps.SmsConfig",
-    "apps.messaging.channels.mail.apps.MailConfig",
     # "apps.messaging.channels.telegram.apps.TelegramConfig",
-
-    "apps.users.apps.UsersConfig",
+    "apps.accounts.apps.AccountsConfig",
+    "apps.bots.apps.BotsConfig",
+    "apps.crm.apps.CrmConfig",
+    
 ]
 
 MIDDLEWARE = [
@@ -136,11 +134,12 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-AUTH_USER_MODEL = "users.User"
+AUTH_USER_MODEL = "accounts.accounts"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # "apps.bots.authentication.BaleAuthentication",
     ),
 }
 
@@ -152,3 +151,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+ALLOWED_HOSTS = ["*"]
+
+BALE_BOT_SECRET = "[paK<l;xc,ml;xm,';xlzmz'x;lcm,z;xlc'm;lxzm;lcmxzocwwqwqtgew]"
