@@ -64,9 +64,46 @@ class CompanyProfile(models.Model):
         max_length=20,
         verbose_name="شماره تلفن ثابت"
     )
+    
+    is_registration_complete = models.BooleanField(
+    default=False,
+    verbose_name="ثبت‌نام کامل شده"
+)
+
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    
+    def check_registration_complete(self):
+        required_fields = [
+            "company_name",
+            "phone_number",
+            "email",
+            "organization_size",
+            "city",
+            "industry",
+            "full_address",
+        ]
+
+        for field_name in required_fields:
+            value = getattr(self, field_name, None)
+
+            if value is None:
+                return False
+
+            if isinstance(value, str) and not value.strip():
+                return False
+
+        return True
+
+    def update_registration_status(self, save=True):
+        self.is_registration_complete = self.check_registration_complete()
+
+        if save:
+            self.save(update_fields=["is_registration_complete"])
+
+        return self.is_registration_complete
 
     def __str__(self):
         return self.company_name or self.fullname or str(self.account)

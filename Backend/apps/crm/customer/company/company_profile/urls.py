@@ -5,6 +5,7 @@ from .views import (
     MyCompanyProfileDetailsAPIView,
     AdminCompanyProfileListAPIView,
     AdminCompanyProfileDetailAPIView,
+    CompanyProfileChoicesAPIView
 )
 
 urlpatterns = [
@@ -28,4 +29,6 @@ urlpatterns = [
         AdminCompanyProfileDetailAPIView.as_view(),
         name="admin-company-profile-detail",
     ),
+    path("choices/", CompanyProfileChoicesAPIView.as_view(), name="Company-Profile-Choices"),
+
 ]

@@ -6,7 +6,8 @@ class AccountsAdmin(admin.ModelAdmin):
     list_display = (
         "id", 
         "phone_number", 
-        "username", 
+        "username",
+        "password", 
         "email", 
         "is_bot_bale_member",  # Corrected field name
         "is_jobseeker_member", 

@@ -1,6 +1,8 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticatedOrReadOnly
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from apps.bots.bale.BaleProfile.permissions import IsBaleUserByChatIdOrPhoneNumber
 
@@ -13,11 +15,19 @@ class AdminCompanyProfileListAPIView(generics.ListCreateAPIView):
     serializer_class = CompanyProfileSerializer
     permission_classes = [IsAdminUser]
 
+    def perform_create(self, serializer):
+        profile = serializer.save()
+        profile.update_registration_status()
+
 
 class AdminCompanyProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CompanyProfile.objects.all()
     serializer_class = CompanyProfileSerializer
     permission_classes = [IsAdminUser]
+
+    def perform_update(self, serializer):
+        profile = serializer.save()
+        profile.update_registration_status()
 
 
 def get_account_from_bale_user(request):
@@ -65,6 +75,10 @@ class MyCompanyProfileDetailsAPIView(generics.RetrieveUpdateAPIView):
 
         return profile
 
+    def perform_update(self, serializer):
+        profile = serializer.save()
+        profile.update_registration_status()
+
 
 class CompanyProfileRegisterAPIView(generics.CreateAPIView):
     serializer_class = CompanyProfileSerializer
@@ -79,4 +93,20 @@ class CompanyProfileRegisterAPIView(generics.CreateAPIView):
                 "detail": "پروفایل شرکت برای این کاربر قبلاً ایجاد شده است."
             })
 
-        serializer.save(account=account)
+        profile = serializer.save(account=account)
+        profile.update_registration_status()
+
+
+def serialize_choices(choices):
+    return [{"value": value, "label": label} for value, label in choices]
+
+
+class CompanyProfileChoicesAPIView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get(self, request, *args, **kwargs):
+        data = {
+            "organization_size": serialize_choices(CompanyProfile.OrganizationSizeChoices.choices),
+            "city": serialize_choices(CompanyProfile.CityChoices.choices)
+        }
+        return Response(data)
