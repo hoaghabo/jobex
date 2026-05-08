@@ -1,95 +1,30 @@
-========================
-🐍 Python / Django
-========================
-pycache/
-
+# Python
+__pycache__/
 *.py[cod]
-
 *.sqlite3
-
 *.log
 
-*.pot
-
-*.pyc
-
-*.pyo
-
-*.pyd
-
-مجازی‌سازی Python
-env/
-
+# Virtual environments
 venv/
-
+env/
 ENV/
 
+# Environment variables
+.env
 *.env
 
-فایل‌های موقتی Django
+# Django
 media/
-
 staticfiles/
 
-tmp/
-
-*.pid
-
-========================
-🐳 Docker
-========================
-فایل‌های volume لوکال و داده‌های دیتابیس
+# Docker
 postgres_data/
-
 docker-compose.override.yml
 
-*.bak
-
-*.old
-
-========================
-🧠 IDE / Editor
-========================
+# IDEs
 .vscode/
-
 .idea/
 
-*.swp
-
-*.swo
-
-========================
-📦 سیستم‌عامل عمومی
-========================
+# OS
 .DS_Store
-
 Thumbs.db
-
-========================
-🤖 بخش ربات بله (Bale Bot)
-========================
-bale_bot/pycache/
-
-bale_bot/*.log
-
-========================
-🌐 Node یا ابزار فرانت‌اند (در صورت وجود)
-========================
-node_modules/
-
-dist/
-
-build/
-
-========================
-🔒 Secret و فایل‌های حساس
-========================
-.env
-
-*.key
-
-*.pem
-
-*.crt
-
-*.cert
