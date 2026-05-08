@@ -1,4 +1,4 @@
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
@@ -6,6 +6,9 @@ from aiogram.types import CallbackQuery
 from .states import ResumeJobSeekerUploadStates
 
 router = Router()
+
+# ID کانال مورد نظر (همان 5198008587)
+CHANNEL_ID = "5198008587"  # توجه: فرمت کانال باید با -100 شروع شود
 
 
 @router.message(F.text == "آپلود فایل رزومه")
@@ -19,12 +22,11 @@ async def ask_for_resume_file_handler(message: Message, state: FSMContext):
     )
 
 
-
 @router.message(
     ResumeJobSeekerUploadStates.waiting_for_resume_upload,
     F.document
 )
-async def receive_resume_file_handler(message: Message, state: FSMContext):
+async def receive_resume_file_handler(message: Message, state: FSMContext, bot: Bot):
     document = message.document
 
     max_size = 5 * 1024 * 1024  # 5MB
@@ -46,6 +48,7 @@ async def receive_resume_file_handler(message: Message, state: FSMContext):
         )
         return
 
+    # ذخیره اطلاعات فایل در state
     await state.update_data(
         resume_file_id=document.file_id,
         resume_file_unique_id=document.file_unique_id,
@@ -54,13 +57,23 @@ async def receive_resume_file_handler(message: Message, state: FSMContext):
         resume_file_size=document.file_size,
     )
 
-    await message.answer(
-        "فایل رزومه شما با موفقیت دریافت شد ✅"
-    )
+    # ارسال فایل به کانال
+    try:
+        await bot.send_document(
+            chat_id=CHANNEL_ID,  # ارسال به کانال
+            document=document.file_id,  # فایل ID برای ارسال
+            caption=f"📄 فایل رزومه جدید دریافت شد:\n\n"
+                    f"👤 ارسال‌کننده: {message.from_user.full_name} | {message.from_user.id}\n"
+                    f"📎 نام فایل: {file_name}\n"
+        )
+        await message.answer(
+            "فایل رزومه شما با موفقیت دریافت شد و به کانال ارسال شد ✅"
+        )
+    except Exception as e:
+        print(f"خطا در ارسال فایل به کانال: {e}")
+        await message.answer(
+            "متأسفانه در ارسال رزومه به کانال خطایی رخ داد. لطفاً دوباره تلاش کنید."
+        )
 
-    # اگر بعد از آپلود رزومه می‌خوای مرحله بعدی رو شروع کنی:
-    # await state.set_state(ResumeJobSeekerCreateStates.waiting_for_degree)
-    # await message.answer("لطفاً مدرک تحصیلی خود را انتخاب کنید:", reply_markup=await get_degree_inline_keyboard())
-
-    # اگر همین‌جا کار تمام است:
-    # await state.clear()
+    # اتمام state
+    await state.clear()

@@ -48,10 +48,10 @@ def get_main_menu_keyboard(
             [
                 [
                     KeyboardButton(text="ثبت نیازمندی جدید"),
-                    KeyboardButton(text="مدیریت آگهی های شغلی"),
+                    # KeyboardButton(text="مدیریت آگهی های شغلی"),
                 ],
                 [
-                    KeyboardButton(text="ویرایش پروفایل"),
+                    # KeyboardButton(text="ویرایش پروفایل"),
                 ],
                 [
                     KeyboardButton(text="بازگشت به منو اصلی"),
