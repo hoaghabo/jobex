@@ -166,3 +166,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = ["*"]
 
 BALE_BOT_SECRET = "[paK<l;xc,ml;xm,';xlzmz'x;lcm,z;xlc'm;lxzm;lcmxzocwwqwqtgew]"
+
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
