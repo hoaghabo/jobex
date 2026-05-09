@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   backend:
     build:
@@ -16,6 +14,8 @@ services:
       --access-logfile -
       --error-logfile -
       --log-level info
+    environment:
+      DEBUG: "True"
     volumes:
       - ./Backend:/app
     ports:
