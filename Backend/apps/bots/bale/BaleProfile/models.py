@@ -13,7 +13,7 @@ class BaleProfile(models.Model):
 
     chat_id = models.BigIntegerField(unique=True, null=False, blank=False)
     user_id = models.BigIntegerField(unique=True, null=False, blank=False)
-    username = models.CharField(max_length=100, blank=True)
+    username = models.CharField(max_length=100, null=True, blank=True)
     phone_number = models.CharField(max_length=20, null=False, blank=False)
     profile_first_name = models.CharField(max_length=100, blank=True)
     profile_last_name = models.CharField(max_length=100, blank=True)
