@@ -286,7 +286,7 @@ async def get_landline_phone_handler(message: Message, state: FSMContext):
             if profile_status.get("is_registration_complete") is True:
                 await message.answer(
                     "پروفایل کارفرمایی شما تکمیل شده است ✅",
-                    reply_markup=get_main_menu_keyboard(**menu_flags),
+                    reply_markup=get_main_menu_keyboard(**menu_flags,state="company"),
                 )
                 await state.clear()
         else:
