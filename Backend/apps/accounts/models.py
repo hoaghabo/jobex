@@ -7,6 +7,7 @@ class AccountManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
         if not phone_number:
             raise ValueError("Phone number is required")
+
         user = self.model(phone_number=phone_number, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -25,14 +26,18 @@ class AccountManager(BaseUserManager):
 
 
 class Accounts(AbstractUser):
-    username = models.CharField(max_length=150, blank=True, null=True, unique=False)
+    username = None
     phone_number = models.CharField(max_length=15, unique=True)
     is_phone_verified = models.BooleanField(default=False)
     is_registration_completed = models.BooleanField(default=False)
     is_bot_bale_member = models.BooleanField(default=False)
     is_jobseeker_member = models.BooleanField(default=False)
     is_company_member = models.BooleanField(default=False)
+
     USERNAME_FIELD = "phone_number"
     REQUIRED_FIELDS = []
 
     objects = AccountManager()
+
+    def __str__(self):
+        return self.phone_number

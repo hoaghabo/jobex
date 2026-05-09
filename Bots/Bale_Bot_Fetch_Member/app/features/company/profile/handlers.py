@@ -156,6 +156,7 @@ async def get_city_callback_handler(callback: CallbackQuery, state: FSMContext):
 async def get_year_birthday_handler(callback: CallbackQuery, state: FSMContext):
     with suppress(TelegramAPIError):
         await callback.answer()
+    print("================>> I Am uPDATEEEEEEEEEEEEEEE")
 
     city = callback.data.split(":")[-1]
     await state.update_data(city=city)
