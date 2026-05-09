@@ -4,6 +4,8 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.types import ReplyKeyboardRemove
+from aiogram.exceptions import TelegramBadRequest, TelegramAPIError
+from contextlib import suppress
 
 from .formatter import get_choice_label,extract_phone_number, normalize_website
 import re
@@ -152,20 +154,18 @@ async def get_city_callback_handler(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("city:"))
 async def get_year_birthday_handler(callback: CallbackQuery, state: FSMContext):
+    with suppress(TelegramAPIError):
+        await callback.answer()
+
     city = callback.data.split(":")[-1]
-
     await state.update_data(city=city)
-
-    await callback.answer()
 
     await callback.message.edit_text(
         "لطفا صنعت/حوزه خود را وارد کنید\n"
         "فرمت مناسب ورودی: دیجیتال و فناوری"
     )
 
-    await state.set_state(
-        CompanyProfileCreateStates.waiting_for_industry)
-
+    await state.set_state(CompanyProfileCreateStates.waiting_for_industry)
 
 
 

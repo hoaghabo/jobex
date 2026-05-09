@@ -18,14 +18,14 @@ services:
 
   balebot:
     build:
-      context: ./BaleBot
+      context: ./Bots/Bale_Bot_Fetch_Member
       dockerfile: Dockerfile
     container_name: jobex_balebot
-    command: python main.py
+    command: python run_bot.py
     volumes:
-      - ./BaleBot:/app
+      - ./Bots/Bale_Bot_Fetch_Member:/app
     env_file:
-      - ./BaleBot/.env
+      - ./Bots/Bale_Bot_Fetch_Member/.env
     depends_on:
       - db
 
