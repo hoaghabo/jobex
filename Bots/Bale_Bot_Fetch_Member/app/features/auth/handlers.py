@@ -172,7 +172,9 @@ async def invalid_phone_input_handler(message: Message):
 
 @router.message(F.text == "کارجو")
 async def choose_jobseeker_handler(message: Message, state: FSMContext):
+    status_response = None
 
+    # 1) گرفتن وضعیت کاربر
     try:
         status_response = await get_user_status(message)
     except Exception as e:
@@ -184,43 +186,67 @@ async def choose_jobseeker_handler(message: Message, state: FSMContext):
 
     menu_flags = extract_menu_flags(status_response)
 
-    # ✅ اگر قبلاً پروفایل کارجویی دارد
-    if menu_flags["is_jobseeker_member"]:
+    is_registered = menu_flags.get("is_bot_bale_member", False)
+    is_jobseeker_member = menu_flags.get("is_jobseeker_member", False)
+
+    # -------------------------------------------------
+    # حالت اول: کاربر هنوز ثبت‌نام نکرده
+    # -------------------------------------------------
+    if not is_registered:
+        await message.answer(
+            "ابتدا باید ثبت‌نام کنید.\n"
+            "لطفاً نام و نام خانوادگی خود را وارد کنید.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await state.set_state(RegisterStates.waiting_for_full_name)
+        return
+
+    # -------------------------------------------------
+    # حالت دوم: ثبت‌نام کرده ولی هنوز پروفایل کارجویی ندارد
+    # -------------------------------------------------
+    if is_registered and not is_jobseeker_member:
+        try:
+            await create_jobseeker_profile(message)
+        except Exception as e:
+            print("Create jobseeker profile error:", e)
+            await message.answer(
+                "فعلاً امکان ساخت پروفایل کارجو وجود ندارد. لطفاً دوباره تلاش کنید."
+            )
+            return
+
+        # بعد از ساخت، دوباره وضعیت را بگیر
+        try:
+            status_response = await get_user_status(message)
+            menu_flags = extract_menu_flags(status_response)
+        except Exception as e:
+            print("Refresh user status error:", e)
+            await message.answer(
+                "پروفایل کارجویی ایجاد شد، اما در بروزرسانی وضعیت مشکلی رخ داد. لطفاً دوباره تلاش کنید."
+            )
+            return
 
         await message.answer(
-            "شما قبلاً پروفایل کارجویی ساخته‌اید ✅",
-            reply_markup=get_main_menu_keyboard(**menu_flags,state = "jobseeker")
+            "پروفایل کارجویی شما با موفقیت ساخته شد ✅",
+            reply_markup=get_main_menu_keyboard(**menu_flags, state="jobseeker")
         )
-
         await state.clear()
         return
 
-    # ✅ اگر ندارد → بساز
-    try:
-        await create_jobseeker_profile(message)
-
-    except Exception as e:
-        print("Create jobseeker profile error:", e)
+    # -------------------------------------------------
+    # حالت سوم: ثبت‌نام کرده و پروفایل کارجویی دارد
+    # -------------------------------------------------
+    if is_registered and is_jobseeker_member:
         await message.answer(
-            "فعلاً امکان ساخت پروفایل کارجو وجود ندارد. لطفاً دوباره تلاش کنید."
+            "شما قبلاً پروفایل کارجویی ساخته‌اید ✅",
+            reply_markup=get_main_menu_keyboard(**menu_flags, state="jobseeker")
         )
+        await state.clear()
         return
 
-    # ✅ بعد از ساخت → دوباره وضعیت بگیر (خیلی مهم برای sync بودن)
-    try:
-        status_response = await get_user_status(message)
-        menu_flags = extract_menu_flags(status_response)
-    except Exception as e:
-        print("Refresh user status error:", e)
-        return
-
+    # fallback
     await message.answer(
-        "پروفایل کارجویی شما با موفقیت ساخته شد ✅",
-        reply_markup=get_main_menu_keyboard(**menu_flags, state = "jobseeker")
+        "وضعیت حساب شما قابل تشخیص نیست. لطفاً دوباره تلاش کنید."
     )
-
-    await state.clear()
-
 
 
 

@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery
 from aiogram.types import ReplyKeyboardRemove
 from aiogram.exceptions import TelegramBadRequest, TelegramAPIError
 from contextlib import suppress
+from app.features.auth.states import RegisterStates
 
 from .formatter import get_choice_label,extract_phone_number, normalize_website
 import re
@@ -29,69 +30,80 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
+    
 @router.message(F.text == "کارفرما")
 async def choose_company_handler(message: Message, state: FSMContext):
     profile_status = None
     backend_response = None
 
-    # 1. اول بررسی کن پروفایل کارفرما وجود دارد یا نه
+    # 1) تلاش برای گرفتن وضعیت پروفایل/کاربر از بک‌اند
     try:
         profile_status = await get_company_profile_status(message.chat.id)
-
+        backend_response = profile_status
     except Exception as e:
         print("Get company profile status error:", e)
-
-        # اگر API شما برای نبودن پروفایل 404 می‌دهد،
-        # اینجا باید فقط در حالت 404 اجازه ساخت پروفایل بدهی.
-        # فعلاً چون نوع exception مشخص نیست، می‌رویم سراغ ساخت.
         profile_status = None
+        backend_response = None
 
-    # 2. اگر پروفایل وجود دارد
-    if profile_status:
-        menu_flags = extract_menu_flags(profile_status)
-        menu_flags["is_bot_bale_member"] = True
-        menu_flags["is_company_member"] = True
+    # 2) استخراج فلگ‌ها از پاسخ بک‌اند
+    menu_flags = extract_menu_flags(backend_response)
 
-        if profile_status.get("is_registration_complete") is True:
-            await message.answer(
-                "پروفایل کارفرمایی شما قبلاً تکمیل شده است ✅",
-                reply_markup=get_main_menu_keyboard(**menu_flags , state = "company"),
-            )
-            await state.clear()
-            return
+    is_registered = menu_flags.get("is_bot_bale_member", False)
+    is_company_member = menu_flags.get("is_company_member", False)
 
+    # -------------------------------------------------
+    # حالت اول: کاربر اصلاً ثبت‌نام نکرده
+    # -------------------------------------------------
+    if not is_registered:
         await message.answer(
-            "پروفایل کارفرمایی شما هنوز کامل نشده است.\n"
-            "لطفاً برای ادامه مسیر پروفایل کارفرمایی خود را تکمیل نمایید.\n\n"
-            "نام سازمان خود را وارد کنید.",
-            reply_markup=ReplyKeyboardRemove()
+            "ابتدا باید ثبت‌نام کنید.\n"
+            "لطفاً نام و نام خانوادگی خود را وارد کنید.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await state.set_state(RegisterStates.waiting_for_full_name)
+        return
+
+    # -------------------------------------------------
+    # حالت دوم: کاربر ثبت‌نام کرده ولی پروفایل کارفرمایی ندارد
+    # -------------------------------------------------
+    if is_registered and not is_company_member:
+        await message.answer(
+            "شما هنوز پروفایل کارفرمایی ندارید.\n"
+            "لطفاً برای شروع، نام سازمان خود را وارد کنید.",
+            reply_markup=ReplyKeyboardRemove(),
         )
         await state.set_state(CompanyProfileCreateStates.waiting_for_company_name)
         return
 
-    # 3. اگر پروفایل وجود ندارد، بساز
-    # try:
-    #     backend_response = await create_company_profile(message)
+    # -------------------------------------------------
+    # حالت سوم: کاربر ثبت‌نام کرده و پروفایل کارفرمایی دارد
+    # -------------------------------------------------
+    if is_registered and is_company_member:
+        menu_flags["is_bot_bale_member"] = True
+        menu_flags["is_company_member"] = True
 
-    # except Exception as e:
-    #     print("Create company profile error:", e)
-    #     await message.answer(
-    #         "فعلاً امکان ساخت پروفایل کارفرما وجود ندارد. لطفاً دوباره تلاش کنید."
-    #     )
-    #     return
+        # اگر پروفایل کامل شده
+        if profile_status and profile_status.get("is_registration_complete") is True:
+            await message.answer(
+                "پروفایل کارفرمایی شما قبلاً تکمیل شده است ✅",
+                reply_markup=get_main_menu_keyboard(**menu_flags, state="company"),
+            )
+            await state.clear()
+            return
 
-    menu_flags = extract_menu_flags(backend_response, state = "company")
-    menu_flags["is_bot_bale_member"] = True
-    menu_flags["is_company_member"] = True
+        # اگر پروفایل وجود دارد ولی کامل نشده
+        await message.answer(
+            "پروفایل کارفرمایی شما هنوز کامل نشده است.\n"
+            "لطفاً برای ادامه، نام سازمان خود را وارد کنید.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await state.set_state(CompanyProfileCreateStates.waiting_for_company_name)
+        return
 
-    # 4. بعد از ساخت پروفایل، چون تازه ساخته شده و ناقص است، ببر برای تکمیل
+    # fallback
     await message.answer(
-        "پروفایل کارفرمایی شما ایجاد شد ✅\n"
-        "لطفاً برای ادامه مسیر پروفایل خود را تکمیل نمایید.\n\n"
-        "نام سازمان خود را وارد کنید."
+        "وضعیت حساب شما قابل تشخیص نیست. لطفاً دوباره تلاش کنید."
     )
-
-    await state.set_state(CompanyProfileCreateStates.waiting_for_company_name)
 
 
 
