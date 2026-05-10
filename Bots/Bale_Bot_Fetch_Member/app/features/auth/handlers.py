@@ -23,7 +23,8 @@ from app.shared.keyboards.main_menu import get_main_menu_keyboard
 router = Router()
 
 
-@router.message(CommandStart() | (F.text == "عضویت در بات"))
+@router.message(CommandStart())
+@router.message(F.text == "عضویت در بات")
 async def start_handler(message: Message, state: FSMContext):
     await state.clear()
 
@@ -55,7 +56,8 @@ async def start_handler(message: Message, state: FSMContext):
     await state.set_state(RegisterStates.waiting_for_full_name)
     
 
-@router.message(RegisterStates.waiting_for_full_name, CommandStart() | (F.text == "عضویت در بات"))
+@router.message(RegisterStates.waiting_for_full_name, CommandStart())
+@router.message(RegisterStates.waiting_for_full_name, F.text == "عضویت در بات")
 async def get_full_name_handler(message: Message, state: FSMContext):
     await message.answer(
         "برای استفاده از ربات ابتدا باید ثبت‌نام کنید.\n"
