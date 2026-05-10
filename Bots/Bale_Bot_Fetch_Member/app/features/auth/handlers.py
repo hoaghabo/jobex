@@ -53,6 +53,16 @@ async def start_handler(message: Message, state: FSMContext):
         "لطفاً نام و نام خانوادگی خود را وارد کنید."
     )
     await state.set_state(RegisterStates.waiting_for_full_name)
+    
+
+@router.message(RegisterStates.waiting_for_full_name, CommandStart() | (F.text == "عضویت در بات"))
+async def get_full_name_handler(message: Message, state: FSMContext):
+    await message.answer(
+        "برای استفاده از ربات ابتدا باید ثبت‌نام کنید.\n"
+        "لطفاً نام و نام خانوادگی خود را وارد کنید."
+    )
+    await state.set_state(RegisterStates.waiting_for_full_name)
+
 
 
 @router.message(RegisterStates.waiting_for_full_name, F.text)
@@ -72,6 +82,7 @@ async def get_full_name_handler(message: Message, state: FSMContext):
     )
 
     await state.set_state(RegisterStates.waiting_for_phone_number)
+    
 
 
 @router.message(RegisterStates.waiting_for_phone_number, F.contact)
