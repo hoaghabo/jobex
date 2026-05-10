@@ -33,20 +33,20 @@ router = Router()
     
 @router.message(F.text == "کارفرما")
 async def choose_company_handler(message: Message, state: FSMContext):
-    profile_status = None
-    backend_response = None
-
-    # 1) تلاش برای گرفتن وضعیت پروفایل/کاربر از بک‌اند
+    # -------------------------------------------------
+    # 1. گرفتن وضعیت کلی کاربر
+    # -------------------------------------------------
     try:
-        profile_status = await get_company_profile_status(message.chat.id)
-        backend_response = profile_status
+        status_response = await get_user_status(message)
     except Exception as e:
-        print("Get company profile status error:", e)
-        profile_status = None
-        backend_response = None
+        print("Get user status error:", e)
+        await message.answer(
+            "خطا در دریافت اطلاعات کاربر. لطفاً دوباره تلاش کنید."
+        )
+        return
 
-    # 2) استخراج فلگ‌ها از پاسخ بک‌اند
-    menu_flags = extract_menu_flags(backend_response)
+    menu_flags = extract_menu_flags(status_response)
+    print(f"===================>>>> {menu_flags}")
 
     is_registered = menu_flags.get("is_bot_bale_member", False)
     is_company_member = menu_flags.get("is_company_member", False)
@@ -66,7 +66,7 @@ async def choose_company_handler(message: Message, state: FSMContext):
     # -------------------------------------------------
     # حالت دوم: کاربر ثبت‌نام کرده ولی پروفایل کارفرمایی ندارد
     # -------------------------------------------------
-    if is_registered and not is_company_member:
+    if not is_company_member:
         await message.answer(
             "شما هنوز پروفایل کارفرمایی ندارید.\n"
             "لطفاً برای شروع، نام سازمان خود را وارد کنید.",
@@ -77,34 +77,49 @@ async def choose_company_handler(message: Message, state: FSMContext):
 
     # -------------------------------------------------
     # حالت سوم: کاربر ثبت‌نام کرده و پروفایل کارفرمایی دارد
+    # اینجا باید وضعیت خود پروفایل کارفرما را بگیریم
     # -------------------------------------------------
-    if is_registered and is_company_member:
-        menu_flags["is_bot_bale_member"] = True
-        menu_flags["is_company_member"] = True
-
-        # اگر پروفایل کامل شده
-        if profile_status and profile_status.get("is_registration_complete") is True:
-            await message.answer(
-                "پروفایل کارفرمایی شما قبلاً تکمیل شده است ✅",
-                reply_markup=get_main_menu_keyboard(**menu_flags, state="company"),
-            )
-            await state.clear()
-            return
-
-        # اگر پروفایل وجود دارد ولی کامل نشده
+    try:
+        profile_status = await get_company_profile_status(message.chat.id)
+    except Exception as e:
+        print("Get company profile status error:", e)
         await message.answer(
-            "پروفایل کارفرمایی شما هنوز کامل نشده است.\n"
-            "لطفاً برای ادامه، نام سازمان خود را وارد کنید.",
-            reply_markup=ReplyKeyboardRemove(),
+            "خطا در دریافت اطلاعات پروفایل کارفرمایی. لطفاً دوباره تلاش کنید."
         )
-        await state.set_state(CompanyProfileCreateStates.waiting_for_company_name)
         return
 
-    # fallback
-    await message.answer(
-        "وضعیت حساب شما قابل تشخیص نیست. لطفاً دوباره تلاش کنید."
-    )
+    # برای اطمینان
+    menu_flags["is_bot_bale_member"] = True
+    menu_flags["is_company_member"] = True
 
+    is_company_registration_complete = False
+
+    if isinstance(profile_status, dict):
+        is_company_registration_complete = (
+            profile_status.get("is_registration_complete") is True
+        )
+
+    # -------------------------------------------------
+    # اگر پروفایل کارفرمایی کامل است
+    # -------------------------------------------------
+    if is_company_registration_complete:
+        await message.answer(
+            "پروفایل کارفرمایی شما قبلاً تکمیل شده است ✅",
+            reply_markup=get_main_menu_keyboard(**menu_flags, state="company"),
+        )
+        await state.clear()
+        return
+
+    # -------------------------------------------------
+    # اگر پروفایل کارفرمایی وجود دارد ولی کامل نشده
+    # -------------------------------------------------
+    await message.answer(
+        "پروفایل کارفرمایی شما هنوز کامل نشده است.\n"
+        "لطفاً برای ادامه، نام سازمان خود را وارد کنید.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await state.set_state(CompanyProfileCreateStates.waiting_for_company_name)
+    return
 
 
 @router.message(CompanyProfileCreateStates.waiting_for_company_name, F.text)
