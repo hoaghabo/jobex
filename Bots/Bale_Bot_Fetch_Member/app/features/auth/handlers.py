@@ -23,7 +23,7 @@ from app.shared.keyboards.main_menu import get_main_menu_keyboard
 router = Router()
 
 
-@router.message(CommandStart())
+@router.message(CommandStart() | (F.text == "عضویت در ربات"))
 async def start_handler(message: Message, state: FSMContext):
     await state.clear()
 
