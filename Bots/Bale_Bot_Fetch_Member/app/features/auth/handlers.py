@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from app.infrastructure.backend.bot_user_api import create_company_profile, create_jobseeker_profile
 
@@ -170,83 +170,83 @@ async def invalid_phone_input_handler(message: Message):
 
 
 
-@router.message(F.text == "کارجو")
-async def choose_jobseeker_handler(message: Message, state: FSMContext):
-    status_response = None
+# @router.message(F.text == "کارجو")
+# async def choose_jobseeker_handler(message: Message, state: FSMContext):
+#     status_response = None
 
-    # 1) گرفتن وضعیت کاربر
-    try:
-        status_response = await get_user_status(message)
-    except Exception as e:
-        print("Get user status error:", e)
-        await message.answer(
-            "خطا در دریافت اطلاعات کاربر. لطفاً دوباره تلاش کنید."
-        )
-        return
+#     # 1) گرفتن وضعیت کاربر
+#     try:
+#         status_response = await get_user_status(message)
+#     except Exception as e:
+#         print("Get user status error:", e)
+#         await message.answer(
+#             "خطا در دریافت اطلاعات کاربر. لطفاً دوباره تلاش کنید."
+#         )
+#         return
 
-    menu_flags = extract_menu_flags(status_response)
+#     menu_flags = extract_menu_flags(status_response)
 
-    is_registered = menu_flags.get("is_bot_bale_member", False)
-    is_jobseeker_member = menu_flags.get("is_jobseeker_member", False)
+#     is_registered = menu_flags.get("is_bot_bale_member", False)
+#     is_jobseeker_member = menu_flags.get("is_jobseeker_member", False)
 
-    # -------------------------------------------------
-    # حالت اول: کاربر هنوز ثبت‌نام نکرده
-    # -------------------------------------------------
-    if not is_registered:
-        await message.answer(
-            "ابتدا باید ثبت‌نام کنید.\n"
-            "لطفاً نام و نام خانوادگی خود را وارد کنید.",
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        await state.set_state(RegisterStates.waiting_for_full_name)
-        return
+#     # -------------------------------------------------
+#     # حالت اول: کاربر هنوز ثبت‌نام نکرده
+#     # -------------------------------------------------
+#     if not is_registered:
+#         await message.answer(
+#             "ابتدا باید ثبت‌نام کنید.\n"
+#             "لطفاً نام و نام خانوادگی خود را وارد کنید.",
+#             reply_markup=ReplyKeyboardRemove(),
+#         )
+#         await state.set_state(RegisterStates.waiting_for_full_name)
+#         return
 
-    # -------------------------------------------------
-    # حالت دوم: ثبت‌نام کرده ولی هنوز پروفایل کارجویی ندارد
-    # -------------------------------------------------
-    if is_registered and not is_jobseeker_member:
-        try:
-            await create_jobseeker_profile(message)
-        except Exception as e:
-            print("Create jobseeker profile error:", e)
-            await message.answer(
-                "فعلاً امکان ساخت پروفایل کارجو وجود ندارد. لطفاً دوباره تلاش کنید."
-            )
-            return
+#     # -------------------------------------------------
+#     # حالت دوم: ثبت‌نام کرده ولی هنوز پروفایل کارجویی ندارد
+#     # -------------------------------------------------
+#     if is_registered and not is_jobseeker_member:
+#         try:
+#             await create_jobseeker_profile(message)
+#         except Exception as e:
+#             print("Create jobseeker profile error:", e)
+#             await message.answer(
+#                 "فعلاً امکان ساخت پروفایل کارجو وجود ندارد. لطفاً دوباره تلاش کنید."
+#             )
+#             return
 
-        # بعد از ساخت، دوباره وضعیت را بگیر
-        try:
-            status_response = await get_user_status(message)
-            menu_flags = extract_menu_flags(status_response)
-        except Exception as e:
-            print("Refresh user status error:", e)
-            await message.answer(
-                "پروفایل کارجویی ایجاد شد، اما در بروزرسانی وضعیت مشکلی رخ داد. لطفاً دوباره تلاش کنید."
-            )
-            return
+#         # بعد از ساخت، دوباره وضعیت را بگیر
+#         try:
+#             status_response = await get_user_status(message)
+#             menu_flags = extract_menu_flags(status_response)
+#         except Exception as e:
+#             print("Refresh user status error:", e)
+#             await message.answer(
+#                 "پروفایل کارجویی ایجاد شد، اما در بروزرسانی وضعیت مشکلی رخ داد. لطفاً دوباره تلاش کنید."
+#             )
+#             return
 
-        await message.answer(
-            "پروفایل کارجویی شما با موفقیت ساخته شد ✅",
-            reply_markup=get_main_menu_keyboard(**menu_flags, state="jobseeker")
-        )
-        await state.clear()
-        return
+#         await message.answer(
+#             "پروفایل کارجویی شما با موفقیت ساخته شد ✅",
+#             reply_markup=get_main_menu_keyboard(**menu_flags, state="jobseeker")
+#         )
+#         await state.clear()
+#         return
 
-    # -------------------------------------------------
-    # حالت سوم: ثبت‌نام کرده و پروفایل کارجویی دارد
-    # -------------------------------------------------
-    if is_registered and is_jobseeker_member:
-        await message.answer(
-            "شما قبلاً پروفایل کارجویی ساخته‌اید ✅",
-            reply_markup=get_main_menu_keyboard(**menu_flags, state="jobseeker")
-        )
-        await state.clear()
-        return
+#     # -------------------------------------------------
+#     # حالت سوم: ثبت‌نام کرده و پروفایل کارجویی دارد
+#     # -------------------------------------------------
+#     if is_registered and is_jobseeker_member:
+#         await message.answer(
+#             "شما قبلاً پروفایل کارجویی ساخته‌اید ✅",
+#             reply_markup=get_main_menu_keyboard(**menu_flags, state="jobseeker")
+#         )
+#         await state.clear()
+#         return
 
-    # fallback
-    await message.answer(
-        "وضعیت حساب شما قابل تشخیص نیست. لطفاً دوباره تلاش کنید."
-    )
+#     # fallback
+#     await message.answer(
+#         "وضعیت حساب شما قابل تشخیص نیست. لطفاً دوباره تلاش کنید."
+#     )
 
 
 

@@ -7,7 +7,7 @@ def get_main_menu_keyboard(
     is_bot_bale_member: bool = False,
     state: str = "starter",
 ) -> ReplyKeyboardMarkup:
-    keyboard: list[list[KeyboardButton]] = []
+    keyboard = []
 
     if not is_bot_bale_member:
         keyboard.append(
@@ -31,68 +31,31 @@ def get_main_menu_keyboard(
         )
 
     elif state == "jobseeker":
-        if is_jobseeker_member:
-            keyboard.extend(
+        keyboard.extend(
+            [
                 [
-                    [
-                        KeyboardButton(text="مشاهده رزومه"),
-                        KeyboardButton(text="ویرایش رزومه"),
-                    ],
-                    [
-                        KeyboardButton(text="فرصت‌های شغلی"),
-                    ],
-                    [
-                        KeyboardButton(text="بازگشت به منو اصلی"),
-                    ],
-                ]
-            )
-        else:
-            keyboard.extend(
+                    KeyboardButton(text="تکمیل رزومه آنلاین"),
+                    KeyboardButton(text="آپلود فایل رزومه"),
+                ],
                 [
-                    [
-                        KeyboardButton(text="تکمیل رزومه آنلاین"),
-                        KeyboardButton(text="آپلود فایل رزومه"),
-                    ],
-                    [
-                        KeyboardButton(text="بازگشت به منو اصلی"),
-                    ],
-                ]
-            )
+                    KeyboardButton(text="بازگشت به منو اصلی"),
+                ],
+            ]
+        )
 
     elif state == "company":
-        if is_company_member:
-            keyboard.extend(
-                [
-                    [
-                        KeyboardButton(text="ثبت نیازمندی جدید"),
-                    ],
-                    [
-                        KeyboardButton(text="مدیریت نیازمندی‌ها"),
-                    ],
-                    [
-                        KeyboardButton(text="ویرایش پروفایل شرکت"),
-                    ],
-                    [
-                        KeyboardButton(text="بازگشت به منو اصلی"),
-                    ],
-                ]
-            )
-        else:
-            keyboard.extend(
-                [
-                    [
-                        KeyboardButton(text="تکمیل پروفایل شرکت"),
-                    ],
-                    [
-                        KeyboardButton(text="بازگشت به منو اصلی"),
-                    ],
-                ]
-            )
-
-    else:
-        keyboard.append(
+        keyboard.extend(
             [
-                KeyboardButton(text="بازگشت به منو اصلی"),
+                [
+                    KeyboardButton(text="ثبت نیازمندی جدید"),
+                    # KeyboardButton(text="مدیریت آگهی های شغلی"),
+                ],
+                [
+                    # KeyboardButton(text="ویرایش پروفایل"),
+                ],
+                [
+                    KeyboardButton(text="بازگشت به منو اصلی"),
+                ],
             ]
         )
 

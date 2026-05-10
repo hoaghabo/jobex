@@ -37,3 +37,20 @@ def extract_phone_number(status: dict) -> str | None:
         or status.get("user", {}).get("phone")
         or status.get("user", {}).get("mobile")
     )
+
+
+def extract_jobseeker_profile_flags(profile_data: dict | None) -> dict:
+    if not profile_data:
+        return {}
+
+    result = {}
+
+    for key, value in profile_data.items():
+        if isinstance(value, str):
+            result[key] = bool(value.strip())
+        elif isinstance(value, (list, dict, set, tuple)):
+            result[key] = len(value) > 0
+        else:
+            result[key] = value is not None
+
+    return result

@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from .formatter import get_choice_label,extract_phone_number
@@ -10,6 +10,7 @@ from app.infrastructure.backend.bot_user_api import (
     register_or_update_user,
 )
 from app.shared.keyboards.main_menu import get_main_menu_keyboard
+from app.infrastructure.backend.bot_user_api import create_company_profile, create_jobseeker_profile
 from .keyboards import (
     get_campaign_request_inline_keyboard,
     get_choices_items,
@@ -21,43 +22,111 @@ from .keyboards import (
     get_birthday_day_inline_keyboard,
     get_birthday_month_inline_keyboard
 )
+from app.features.auth.permissions import (
+    extract_menu_flags
+)
+
+from app.features.auth.states import RegisterStates
 
 from .states import ResumeJobSeekerCreateStates
-from .formatter import normalize_digits
-from .api import patch_jobseeker_profile_me
+from .formatter import normalize_digits , extract_jobseeker_profile_flags
+from .api import patch_jobseeker_profile_me , get_jobseeker_profile_me
 
 router = Router()
 
 
-@router.message(F.text == "تکمیل رزومه آنلاین")
-async def get_degree_handler(message: Message, state: FSMContext):
+
+
+@router.message(F.text == "کارجو")
+async def choose_jobseeker_handler(message: Message, state: FSMContext):
+    # -------------------------------------------------
+    # 1) گرفتن وضعیت کاربر
+    # -------------------------------------------------
+    try:
+        status_response = await get_user_status(message)
+    except Exception as e:
+        print("Get user status error:", e)
+        await message.answer(
+            "خطا در دریافت اطلاعات کاربر. لطفاً دوباره تلاش کنید."
+        )
+        return
+
+    menu_flags = extract_menu_flags(status_response)
+
+    is_registered = menu_flags.get("is_bot_bale_member", False)
+    is_jobseeker_member = menu_flags.get("is_jobseeker_member", False)
+
+    # -------------------------------------------------
+    # حالت اول: کاربر هنوز ثبت‌نام نکرده
+    # -------------------------------------------------
+    if not is_registered:
+        await message.answer(
+            "ابتدا باید ثبت‌نام کنید.\n"
+            "لطفاً نام و نام خانوادگی خود را وارد کنید.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await state.set_state(RegisterStates.waiting_for_full_name)
+        return
+
+    # -------------------------------------------------
+    # حالت دوم: ثبت‌نام کرده ولی هنوز پروفایل کارجویی ندارد
+    # -------------------------------------------------
+    if not is_jobseeker_member:
+        try:
+            await create_jobseeker_profile(message)
+        except Exception as e:
+            print("Create jobseeker profile error:", e)
+            await message.answer(
+                "فعلاً امکان ساخت پروفایل کارجو وجود ندارد. لطفاً دوباره تلاش کنید."
+            )
+            return
+
+        # در صورت نیاز وضعیت را رفرش کن
+        try:
+            status_response = await get_user_status(message)
+            menu_flags = extract_menu_flags(status_response)
+        except Exception as e:
+            print("Refresh user status error:", e)
+            await message.answer(
+                "پروفایل کارجویی ایجاد شد، اما در بروزرسانی وضعیت مشکلی رخ داد."
+            )
+            return
+
+        await message.answer(
+            "پروفایل کارجویی شما کامل نمیباشد \n"
+            "لطفا مدرک تحصیلی خود را انتخاب کنید.",
+            reply_markup=await get_degree_inline_keyboard()
+        )
+        await state.set_state(ResumeJobSeekerCreateStates.waiting_for_degree)
+        return
+
+    # -------------------------------------------------
+    # حالت سوم: ثبت‌نام کرده و پروفایل کارجویی دارد
+    # -------------------------------------------------
     await message.answer(
-        "تکمیل رزومه شما \n"
-        "لطفا مدرک تحصیلی خود را انتخاب کنید",
+        "لطفا مدرک تحصیلی خود را انتخاب کنید.",
         reply_markup=await get_degree_inline_keyboard()
     )
+    await state.set_state(ResumeJobSeekerCreateStates.waiting_for_degree)
+    
 
-    await state.set_state(
-        ResumeJobSeekerCreateStates.waiting_for_degree
-    )
-
-@router.callback_query(F.data.startswith("degree:"))
-async def get_year_birthday_handler(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(ResumeJobSeekerCreateStates.waiting_for_degree)
+async def get_degree_callback_handler(callback: CallbackQuery, state: FSMContext):
     degree = callback.data.split(":")[-1]
 
     await state.update_data(degree=degree)
-
     await callback.answer()
 
     await callback.message.edit_text(
-        "لطفا سال تاریخ تولد خود را وارد کنید\n"
-        "فرمت مناسب ورودی: ۱۳۸۴"
+        "لطفا سال تاریخ تولد خود را به صورت معتبر وارد کنید.\n"
+        "فرمت مناسب: ۱۳۸۴"
+    )
+    
+    await state.set_state(
+        ResumeJobSeekerCreateStates.waiting_for_year_birthday
     )
 
-    await state.set_state(
-        ResumeJobSeekerCreateStates.waiting_for_year_birthday)
-    
-    
+
 
 @router.message(ResumeJobSeekerCreateStates.waiting_for_year_birthday, F.text)
 async def get_month_birthday_handler(message: Message, state: FSMContext):
@@ -313,7 +382,6 @@ async def get_campaign_request_callback_handler(callback: CallbackQuery, state: 
         )
         return
 
-    await callback.message.edit_text(summary_text)
     payload = {
         "phone_number": phone_number,
         "degree": data.get("degree"),
@@ -327,6 +395,24 @@ async def get_campaign_request_callback_handler(callback: CallbackQuery, state: 
         "work_location_priority": data.get("work_location_priority"),
         "campaign_request": [campaign_request] if campaign_request else [],
     }
-    await patch_jobseeker_profile_me(payload)
+
+    try:
+        await patch_jobseeker_profile_me(payload)
+    except Exception as e:
+        print("Patch jobseeker profile error:", e)
+        await callback.message.answer(
+            "خطا در ثبت اطلاعات رزومه. لطفاً دوباره تلاش کنید."
+        )
+        return
+
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+    await callback.message.answer(
+        summary_text,
+        reply_markup=get_main_menu_keyboard(state="jobseeker" , is_bot_bale_member = True)
+    )
 
     await state.clear()

@@ -54,3 +54,15 @@ async def patch_jobseeker_profile_me(payload: dict):
         json=payload,
         headers=_build_bot_headers(),
     )
+
+
+
+async def get_jobseeker_profile_me(payload: dict):
+    return await client.get(
+        "/api/crm/customer/jobseeker/profile/me/",
+        json=payload,
+        headers=_build_bot_headers(),
+    )
+
+
+
