@@ -1,4 +1,5 @@
 from django.db import models
+from apps.accounts.models import Accounts
 
 
 class Campaign(models.Model):
@@ -23,9 +24,14 @@ class Campaign(models.Model):
         default=StatusChoices.PENDING,
         verbose_name="وضعیت"
     )
-    
-    owner = models.ForeignKey(Account)
-    
+
+    owner = models.ForeignKey(
+        Accounts,
+        on_delete=models.CASCADE,
+        related_name="campaigns",
+        verbose_name="مالک"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
 

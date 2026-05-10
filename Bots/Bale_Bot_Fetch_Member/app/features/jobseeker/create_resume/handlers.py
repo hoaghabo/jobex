@@ -317,9 +317,9 @@ async def get_campaign_request_callback_handler(callback: CallbackQuery, state: 
     payload = {
         "phone_number": phone_number,
         "degree": data.get("degree"),
-        "birth_year": data.get("year_birthday"),
-        "birth_month": data.get("month_birthday"),
-        "birth_day": data.get("day_birthday"),
+        "year_birthdate": data.get("year_birthday"),
+        "month_birthdate": data.get("month_birthday"),
+        "day_birthdate": data.get("day_birthday"),
         "email": data.get("email"),
         "city": data.get("city"),
         "work_enthusiasts": [data.get("work_enthusiasts")] if data.get("work_enthusiasts") else [],

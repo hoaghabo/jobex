@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.accounts.apps.AccountsConfig",
     "apps.bots.apps.BotsConfig",
     "apps.crm.apps.CrmConfig",
+    "apps.panel.apps.PanelConfig",
     
 ]
 
@@ -179,3 +180,19 @@ ALLOWED_HOSTS = ["*"]
 
 BALE_BOT_SECRET = "[paK<l;xc,ml;xm,';xlzmz'x;lcm,z;xlc'm;lxzm;lcmxzocwwqwqtgew]"
 
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=14),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+
+    "UPDATE_LAST_LOGIN": True,
+
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
