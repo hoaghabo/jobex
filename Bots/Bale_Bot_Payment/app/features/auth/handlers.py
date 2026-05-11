@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 @router.message(CommandStart())
 async def start_handler(message: Message, state: FSMContext):
     await state.clear()
-
     status_response = await get_user_status(message)
 
     if status_response is None:
