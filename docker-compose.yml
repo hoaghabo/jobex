@@ -25,11 +25,11 @@ services:
     depends_on:
       - db
 
-  balebot:
+  balebot_fetch:
     build:
       context: ./Bots/Bale_Bot_Fetch_Member
       dockerfile: Dockerfile
-    container_name: jobex_balebot
+    container_name: jobex_balebot_fetch
     command: python run_bot.py
     volumes:
       - ./Bots/Bale_Bot_Fetch_Member:/app
@@ -37,6 +37,21 @@ services:
       - ./Bots/Bale_Bot_Fetch_Member/.env
     depends_on:
       - db
+
+
+  balebot_pay:
+    build:
+      context: ./Bots/Bale_Bot_Payment
+      dockerfile: Dockerfile
+    container_name: jobex_balebot_pay
+    command: python run_bot.py
+    volumes:
+      - ./Bots/Bale_Bot_Payment:/app
+    env_file:
+      - ./Bots/Bale_Bot_Payment/.env
+    depends_on:
+      - db
+
 
   db:
     image: postgres:16
