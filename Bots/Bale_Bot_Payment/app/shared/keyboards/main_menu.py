@@ -18,34 +18,29 @@ def get_main_menu_keyboard(
             input_field_placeholder="یکی از گزینه‌ها را انتخاب کنید",
         )
 
-    if not is_jobseeker_member and not is_company_member:
+    if is_bot_bale_member:
         keyboard.append(
             [
-                KeyboardButton(text="کارجو"),
-                KeyboardButton(text="کارفرما"),
+                KeyboardButton(text="خرید اشتراک کارجو"),
+                KeyboardButton(text="خرید اشتراک کارفرما"),
             ]
         )
 
-    if is_jobseeker_member:
-        keyboard.append(
-            [
-                KeyboardButton(text="تکمیل رزومه آنلاین"),
-                KeyboardButton(text="آپلود فایل رزومه"),
-            ]
-        )
+    # if is_jobseeker_member:
+    #     keyboard.append(
+    #         [
+    #             KeyboardButton(text="خرید اشتراک"),
+    #         ]
+    #     )
 
-    if is_company_member:
-        keyboard.extend(
-            [
-                [
-                    KeyboardButton(text="ثبت نیازمندی جدید"),
-                    KeyboardButton(text="مدیریت آگهی های شغلی"),
-                ],
-                [
-                    KeyboardButton(text="ویرایش پروفایل"),
-                ],
-            ]
-        )
+    # if is_company_member:
+    #     keyboard.extend(
+    #         [
+    #             [
+    #                 KeyboardButton(text="خرید اشتراک"),
+    #             ],
+    #         ]
+    #     )
 
     return ReplyKeyboardMarkup(
         keyboard=keyboard,

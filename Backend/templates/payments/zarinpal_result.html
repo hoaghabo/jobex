@@ -1,0 +1,128 @@
+<!-- templates/payments/zarinpal_result.html -->
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Vazirmatn, Tahoma, sans-serif;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #0f172a;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 480px;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+            padding: 32px 24px;
+            text-align: center;
+            margin: 16px;
+        }
+
+        .icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            {% if success %}
+            background: #dcfce7;
+            color: #16a34a;
+            {% else %}
+            background: #fee2e2;
+            color: #dc2626;
+            {% endif %}
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.9;
+            color: #475569;
+            margin-bottom: 24px;
+        }
+
+        .ref-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 24px;
+        }
+
+        .ref-label {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .ref-id {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0f172a;
+            word-break: break-word;
+        }
+
+        .btn {
+            display: inline-block;
+            text-decoration: none;
+            background: #2563eb;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+        }
+
+        .sub {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">
+            {% if success %}✓{% else %}✕{% endif %}
+        </div>
+
+        <h1>{{ title }}</h1>
+        <p>{{ message }}</p>
+
+        {% if ref_id %}
+        <div class="ref-box">
+            <div class="ref-label">شناسه پرداخت</div>
+            <div class="ref-id">{{ ref_id }}</div>
+        </div>
+        {% endif %}
+
+        <a class="btn" href="{{ bot_url }}">بازگشت به ربات</a>
+
+        <div class="sub">
+            شناسه داخلی پرداخت: {{ payment_id }}
+        </div>
+    </div>
+</body>
+</html>

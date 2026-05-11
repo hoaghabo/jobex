@@ -29,6 +29,7 @@ class BaleRegisterSerializer(serializers.ModelSerializer):
             "id",
             "chat_id",
             "user_id",
+            "bale_bot_name",
             "username",
             "registered_full_name",
             "phone_number",

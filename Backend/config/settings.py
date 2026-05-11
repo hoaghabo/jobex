@@ -43,13 +43,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'rest_framework',
+    "django_filters",
     "rest_framework_simplejwt",
     "corsheaders",
     # "apps.messaging.channels.telegram.apps.TelegramConfig",
     "apps.accounts.apps.AccountsConfig",
     "apps.bots.apps.BotsConfig",
     "apps.crm.apps.CrmConfig",
+    'django_extensions',
     "apps.panel.apps.PanelConfig",
+    "apps.billing.apps.BillingConfig",
     
 ]
 
@@ -196,3 +199,24 @@ SIMPLE_JWT = {
 
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+
+ZARINPAL_MERCHANT_ID = "4f629634-9450-4884-8406-2102e5e1d4bd"
+# ZARINPAL_MERCHANT_ID = "00000000-0000-0000-0000-000000000000"
+ZARINPAL_SANDBOX = False
+
+ZARINPAL_CALLBACK_URL = "http://localhost:8000/api/billing/payments/zarinpal/callback/"
+
+BILLING_DEFAULT_CURRENCY = "IRR"
+
+BILLING_CARD_TO_CARD_NUMBER = "6037-0000-0000-0000"
+BILLING_CARD_TO_CARD_OWNER = "نام صاحب کارت"
+ZARINPAL_SANDBOX = True
+
+BACKEND_BOT_API_TOKEN = os.getenv('BACKEND_BOT_API_TOKEN', '----------------')
+BALE_BOT_TOKEN = os.getenv('BALE_BOT_TOKEN', '-----------------')
+
+BOT_START_URL = "https://ble.ir/jobexservice"
+
+BALE_PROVIDER_TOKEN = os.getenv('BALE_PROVIDER_TOKEN', '-----------------')
+

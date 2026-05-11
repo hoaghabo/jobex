@@ -34,6 +34,7 @@ async def register_or_update_user(
     payload.update({
         "registered_full_name": registered_full_name,
         "phone_number": phone_number,
+        "bale_bot_name": "fetch_member",
         "user_id": user_id,
     })
 
@@ -43,28 +44,65 @@ async def register_or_update_user(
         headers=_build_bot_headers(),
     )
 
-async def get_user_status(message: Message) -> dict:
-    chat_id = message.from_user.id if message.from_user else None
+
+async def get_user_status(message: Message) -> dict | None:
+    """دریافت وضعیت کاربر از بک‌اند بر اساس Message"""
+    if not message or not message.from_user:
+        return None
+    
+    chat_id = message.from_user.id
 
     try:
-        return await client.get(
+        response = await client.get(
             f"{settings.BOT_USER_STATUS_ENDPOINT}?chat_id={chat_id}",
             headers=_build_bot_headers(),
         )
+        return response
     except BackendAPIError as e:
         status_code = getattr(e, "status_code", None)
 
         if status_code in (403, 404):
             return {
-                "registered": False,
+                "is_registered": False,
+                "is_bot_bale_member": False,
                 "detail": "کاربر پیدا نشد."
             }
 
-        raise
-    
-    
+        # برای خطاهای دیگر، None برمی‌گردانیم
+        return None
+
+
+async def get_user_status_by_chat_id(chat_id: int | str | None) -> dict | None:
+    """دریافت وضعیت کاربر از بک‌اند بر اساس chat_id"""
+    if not chat_id:
+        return {
+            "is_registered": False,
+            "is_bot_bale_member": False,
+            "detail": "chat_id نامعتبر است."
+        }
+
+    try:
+        response = await client.get(
+            f"{settings.BOT_USER_STATUS_ENDPOINT}?chat_id={chat_id}",
+            headers=_build_bot_headers(),
+        )
+        return response
+    except BackendAPIError as e:
+        status_code = getattr(e, "status_code", None)
+
+        if status_code in (403, 404):
+            return {
+                "is_registered": False,
+                "is_bot_bale_member": False,
+                "detail": "کاربر پیدا نشد."
+            }
+
+        # برای خطاهای دیگر، None برمی‌گردانیم
+        return None
+
 
 def normalize_phone_number(phone_number: str | None) -> str | None:
+    """نرمال‌سازی شماره تلفن به فرمت 98XXXXXXXXX"""
     if not phone_number:
         return None
 
@@ -78,52 +116,54 @@ def normalize_phone_number(phone_number: str | None) -> str | None:
         .replace("+", "")
     )
 
+    # 09XXXXXXXXX -> 98XXXXXXXXX
     if phone_number.startswith("09") and len(phone_number) == 11:
         return "98" + phone_number[1:]
 
+    # 9XXXXXXXXX -> 98XXXXXXXXX
     if phone_number.startswith("9") and len(phone_number) == 10:
         return "98" + phone_number
 
+    # 98XXXXXXXXX (قبلاً نرمال است)
     if phone_number.startswith("98") and len(phone_number) == 12:
         return phone_number
 
+    # فرمت نامعتبر
     return phone_number
 
 
 def extract_phone_number_from_status(status_response: dict | None) -> str | None:
-    """
-    شماره موبایل را از responseهای مختلف بک‌اند استخراج و نرمال‌سازی می‌کند.
-    """
-
+    """استخراج و نرمال‌سازی شماره موبایل از پاسخ بک‌اند"""
     if not isinstance(status_response, dict):
         return None
 
-    # حالت مستقیم
+    # جستجو در سطح اول
     phone_number = status_response.get("phone_number")
     if phone_number:
         return normalize_phone_number(phone_number)
 
-    # account فقط اگر dict باشد
+    # جستجو در account
     account = status_response.get("account")
     if isinstance(account, dict):
         phone_number = account.get("phone_number")
         if phone_number:
             return normalize_phone_number(phone_number)
 
-    # user فقط اگر dict باشد
+    # جستجو در user
     user = status_response.get("user")
     if isinstance(user, dict):
         phone_number = user.get("phone_number")
         if phone_number:
             return normalize_phone_number(phone_number)
 
-    # data فقط اگر dict باشد
+    # جستجو در data
     data = status_response.get("data")
     if isinstance(data, dict):
         phone_number = data.get("phone_number")
         if phone_number:
             return normalize_phone_number(phone_number)
 
+        # جستجو در data.account
         data_account = data.get("account")
         if isinstance(data_account, dict):
             phone_number = data_account.get("phone_number")
@@ -134,16 +174,16 @@ def extract_phone_number_from_status(status_response: dict | None) -> str | None
 
 
 async def create_jobseeker_profile(message: Message) -> dict:
+    """ایجاد پروفایل کارجو"""
     status_response = await get_user_status(message)
 
-    if not isinstance(status_response, dict):
+    if not status_response:
         raise BackendAPIError(
-            message=f"خروجی get_user_status نامعتبر است: {status_response}",
-            status_code=400,
+            message="دریافت وضعیت کاربر از بک‌اند با خطا مواجه شد.",
+            status_code=500,
         )
-    print("status_response:", status_response, type(status_response))
+
     phone_number = extract_phone_number_from_status(status_response)
-    print(f'===============================> {phone_number}')
 
     if not phone_number:
         raise BackendAPIError(
@@ -159,12 +199,13 @@ async def create_jobseeker_profile(message: Message) -> dict:
 
 
 async def create_company_profile(message: Message) -> dict:
+    """ایجاد پروفایل شرکت"""
     status_response = await get_user_status(message)
 
-    if not isinstance(status_response, dict):
+    if not status_response:
         raise BackendAPIError(
-            message=f"خروجی get_user_status نامعتبر است: {status_response}",
-            status_code=400,
+            message="دریافت وضعیت کاربر از بک‌اند با خطا مواجه شد.",
+            status_code=500,
         )
 
     phone_number = extract_phone_number_from_status(status_response)
@@ -180,28 +221,3 @@ async def create_company_profile(message: Message) -> dict:
         json={"phone_number": phone_number},
         headers=_build_bot_headers(),
     )
-
-
-
-async def get_user_status_by_chat_id(chat_id: int | str | None) -> dict:
-    if not chat_id:
-        return {
-            "registered": False,
-            "detail": "chat_id نامعتبر است."
-        }
-
-    try:
-        return await client.get(
-            f"{settings.BOT_USER_STATUS_ENDPOINT}?chat_id={chat_id}",
-            headers=_build_bot_headers(),
-        )
-    except BackendAPIError as e:
-        status_code = getattr(e, "status_code", None)
-
-        if status_code in (403, 404):
-            return {
-                "registered": False,
-                "detail": "کاربر پیدا نشد."
-            }
-
-        raise
