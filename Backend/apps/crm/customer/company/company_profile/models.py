@@ -1,5 +1,5 @@
 from django.db import models
-from apps.crm.customer.company.company_membership.models import CompanyMembership
+
 
 
 class CompanyProfile(models.Model):
@@ -24,11 +24,14 @@ class CompanyProfile(models.Model):
         OTHER = "other", "سایر"
 
     company_membership = models.ForeignKey(
-        CompanyMembership,
+        "crm.CompanyMembership",
         on_delete=models.CASCADE,
         related_name="company_profiles",
-        verbose_name="عضویت شرکت"
+        null=True,
+        blank=True,
     )
+
+
 
     company_name = models.CharField(
         max_length=200,
