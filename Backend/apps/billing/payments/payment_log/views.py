@@ -22,7 +22,7 @@ from apps.billing.payments.payment_log.serializers import (
     PaymentStatusSerializer,
     RejectCardToCardPaymentSerializer,
     SubmitCardToCardReceiptSerializer,
-    ZarinpalCallbackSerializer,
+    ZibalCallbackSerializer,
 )
 
 
@@ -62,25 +62,25 @@ def get_product_snapshot(product_id):
     }
 
 
-def get_zarinpal_request_url():
-    if getattr(settings, "ZARINPAL_SANDBOX", True):
-        return "https://sandbox.zarinpal.com/pg/v4/payment/request.json"
+def get_zibal_request_url():
+    if getattr(settings, "ZIBAL_SANDBOX", True):
+        return "https://gateway.zibal.ir/v1/request"
 
-    return "https://api.zarinpal.com/pg/v4/payment/request.json"
-
-
-def get_zarinpal_verify_url():
-    if getattr(settings, "ZARINPAL_SANDBOX", True):
-        return "https://sandbox.zarinpal.com/pg/v4/payment/verify.json"
-
-    return "https://api.zarinpal.com/pg/v4/payment/verify.json"
+    return "https://gateway.zibal.ir/v1/request"
 
 
-def get_zarinpal_startpay_url(authority):
-    if getattr(settings, "ZARINPAL_SANDBOX", True):
-        return f"https://sandbox.zarinpal.com/pg/StartPay/{authority}"
+def get_zibal_verify_url():
+    if getattr(settings, "ZIBAL_SANDBOX", True):
+        return "https://gateway.zibal.ir/v1/request"
 
-    return f"https://www.zarinpal.com/pg/StartPay/{authority}"
+    return "https://gateway.zibal.ir/v1/request"
+
+
+def get_zibal_startpay_url(trackId):
+    if getattr(settings, "ZIBAL_SANDBOX", True):
+        return f"https://gateway.zibal.ir/start/{trackId}"
+
+    return f"https://gateway.zibal.ir/start/{trackId}"
 
 
 class CreatePaymentView(APIView):
@@ -105,8 +105,8 @@ class CreatePaymentView(APIView):
 
         amount = product_snapshot["amount"]
 
-        if gateway == Payment.Gateway.ZARINPAL:
-            payment = self.create_zarinpal_payment(
+        if gateway == Payment.Gateway.ZIBAL:
+            payment = self.create_zibal_payment(
                 request=request,
                 product_id=product_id,
                 product_snapshot=product_snapshot,
@@ -145,7 +145,7 @@ class CreatePaymentView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
-    def create_zarinpal_payment(
+    def create_zibal_payment(
         self,
         request,
         product_id,
@@ -154,25 +154,25 @@ class CreatePaymentView(APIView):
         description,
         serializer,
     ):
-        callback_url = getattr(settings, "ZARINPAL_CALLBACK_URL", None)
-        ZARINPAL_MERCHANT_ID = getattr(settings, "ZARINPAL_MERCHANT_ID", None)
+        callback_url = getattr(settings, "ZIBAL_CALLBACK_URL", None)
+        ZIBAL_MERCHANT_ID = getattr(settings, "ZIBAL_MERCHANT_ID", None)
 
         if not callback_url:
             callback_url = request.build_absolute_uri(
-                "/api/billing/payments/zarinpal/callback/"
+                "/api/billing/payments/zibal/callback/"
             )
 
         payload = {
-            "merchant_id": ZARINPAL_MERCHANT_ID,
+            "merchant": ZIBAL_MERCHANT_ID,
             "amount": amount,
-            "callback_url": callback_url,
+            "callbackUrl": callback_url,
             "description": description or f"خرید محصول {product_id}"
         }
         print(payload)
 
         payment = Payment.objects.create(
             user=request.user,
-            gateway=Payment.Gateway.ZARINPAL,
+            gateway=Payment.Gateway.ZIBAL,
             status=Payment.Status.PENDING,
             product_id=str(product_id),
             product_data=product_snapshot,
@@ -184,7 +184,7 @@ class CreatePaymentView(APIView):
 
         try:
             response = requests.post(
-                get_zarinpal_request_url(),
+                get_zibal_request_url(),
                 json=payload,
                 timeout=20,
             )
@@ -204,16 +204,17 @@ class CreatePaymentView(APIView):
             return payment
 
         payment.request_response = response_data
+        print(f"================== >> response :  {response_data}")
+        data = response_data or {}
+        print(f"================== >> data :  {data}")
+        errors = response_data or {}
 
-        data = response_data.get("data") or {}
-        errors = response_data.get("errors") or {}
+        trackId = data.get("trackId")
+        result = data.get("result")
 
-        authority = data.get("authority")
-        code = data.get("code")
-
-        if code == 100 and authority:
-            payment.authority = authority
-            payment.payment_url = get_zarinpal_startpay_url(authority)
+        if result == 100 and trackId:
+            payment.trackId = trackId
+            payment.payment_url = get_zibal_startpay_url(trackId)
             payment.status = Payment.Status.PENDING
         else:
             payment.status = Payment.Status.FAILED
@@ -223,13 +224,14 @@ class CreatePaymentView(APIView):
             }
 
         payment.save(update_fields=[
-            "authority",
+            "trackId",
             "payment_url",
             "status",
             "request_response",
             "verify_response",
             "updated_at",
         ])
+        print(f"========================>>> payment : --------- {payment}")
 
         return payment
 
@@ -334,7 +336,7 @@ class CreatePaymentView(APIView):
                 result = response_data.get("result", {})
                 message_id = result.get("message_id")
                 
-                payment.authority = invoice_payload  # ذخیره payload برای تطبیق بعدی
+                payment.trackId = invoice_payload  # ذخیره payload برای تطبیق بعدی
                 payment.wallet_payload = {
                     "invoice_payload": invoice_payload,
                     "chat_id": chat_id,
@@ -349,7 +351,7 @@ class CreatePaymentView(APIView):
                 }
             
             payment.save(update_fields=[
-                "authority",
+                "trackId",
                 "wallet_payload",
                 "status",
                 "request_response",
@@ -369,21 +371,21 @@ class CreatePaymentView(APIView):
         return payment
 
 
-class ZarinpalCallbackView(APIView):
+class ZIBALCallbackView(APIView):
     permission_classes = [AllowAny]
 
     @transaction.atomic
     def get(self, request):
-        serializer = ZarinpalCallbackSerializer(data=request.GET)
+        serializer = ZibalCallbackSerializer(data=request.GET)
         serializer.is_valid(raise_exception=True)
 
-        authority = serializer.validated_data["Authority"]
+        trackId = serializer.validated_data["trackId"]
         callback_status = serializer.validated_data["Status"]
 
         payment = get_object_or_404(
             Payment,
-            gateway=Payment.Gateway.ZARINPAL,
-            authority=authority,
+            gateway=Payment.Gateway.ZIBAL,
+            trackId=trackId,
         )
 
         payment.callback_payload = dict(request.GET)
@@ -409,19 +411,19 @@ class ZarinpalCallbackView(APIView):
                 "title": "پرداخت لغو شد",
                 "message": "فرآیند پرداخت توسط کاربر لغو شد.",
             })
-            return render(request, "templates/payments/zarinpal_result.html", context)
+            return render(request, "templates/payments/ZIBAL_result.html", context)
 
         verify_payload = {
-            "merchant_id": settings.ZARINPAL_MERCHANT_ID,
+            "merchant_id": settings.ZIBAL_MERCHANT_ID,
             "amount": payment.amount,
-            "authority": authority,
+            "trackId": trackId,
         }
 
         payment.verify_payload = verify_payload
 
         try:
             response = requests.post(
-                get_zarinpal_verify_url(),
+                get_ZIBAL_verify_url(),
                 json=verify_payload,
                 timeout=20,
             )
@@ -441,7 +443,7 @@ class ZarinpalCallbackView(APIView):
                 "title": "خطا در تایید پرداخت",
                 "message": "در هنگام بررسی نهایی پرداخت خطایی رخ داد. لطفاً چند لحظه بعد دوباره وضعیت را بررسی کنید.",
             })
-            return render(request, "templates/payments/zarinpal_result.html", context)
+            return render(request, "templates/payments/ZIBAL_result.html", context)
 
         payment.verify_response = response_data
         data = response_data.get("data") or {}
@@ -482,7 +484,7 @@ class ZarinpalCallbackView(APIView):
                 "message": "پرداخت شما با موفقیت ثبت شد. اطلاعات خرید برای شما در ربات ارسال شد.",
                 "ref_id": payment.ref_id,
             })
-            return render(request, "templates/payments/zarinpal_result.html", context)
+            return render(request, "templates/payments/zibal_result.html", context)
 
         payment.status = Payment.Status.FAILED
         payment.save(update_fields=[
@@ -497,7 +499,7 @@ class ZarinpalCallbackView(APIView):
             "title": "پرداخت ناموفق بود",
             "message": "پرداخت شما تایید نشد. در صورت کسر وجه، مبلغ طبق قوانین بانکی بازمی‌گردد.",
         })
-        return render(request, "payments/zarinpal_result.html", context)
+        return render(request, "payments/ZIBAL_result.html", context)
 
 
 class SubmitCardToCardReceiptView(APIView):

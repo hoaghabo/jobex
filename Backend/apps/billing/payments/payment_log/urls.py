@@ -8,7 +8,7 @@ from apps.billing.payments.payment_log.views import (
     RejectCardToCardPaymentView,
     SubmitCardToCardReceiptView,
     ConfirmBaleWalletPaymentView,
-    ZarinpalCallbackView,
+    ZIBALCallbackView,
 )
 
 urlpatterns = [
@@ -19,9 +19,9 @@ urlpatterns = [
     ),
 
     path(
-        "zarinpal/callback/",
-        ZarinpalCallbackView.as_view(),
-        name="billing-zarinpal-callback",
+        "ZIBAL/callback/",
+        ZIBALCallbackView.as_view(),
+        name="billing-ZIBAL-callback",
     ),
 
     path(

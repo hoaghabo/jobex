@@ -13,7 +13,6 @@ from .api import (
     get_payment_status,
     submit_card_receipt,
     confirm_bale_wallet_payment,
-    PaymentAPIError
 )
 from .keyboards import (
     get_payment_methods_keyboard,
@@ -21,6 +20,7 @@ from .keyboards import (
     get_back_to_payment_keyboard,
     get_payment_success_keyboard
 )
+from app.infrastructure.backend.client import BackendAPIError
 from app.config import settings
 from app.infrastructure.backend.bot_user_api import get_user_status_by_chat_id
 
@@ -138,7 +138,6 @@ async def auto_check_payment_status(
 
         try:
             status_data = await get_payment_status(
-                base_url=settings.BACKEND_BASE_URL,
                 chat_id=str(chat_id),
                 payment_id=payment_id
             )
@@ -202,7 +201,7 @@ async def auto_check_payment_status(
             message_id=message_id,
             text=timeout_text,
             parse_mode="Markdown",
-            reply_markup=get_payment_actions_keyboard(payment_id, "zarinpal")
+            reply_markup=get_payment_actions_keyboard(payment_id, "ZIBAL")
         )
     except Exception as e:
         logger.error(f"خطا در ویرایش پیام timeout: {e}")
@@ -238,10 +237,10 @@ async def choose_payment_method(callback: CallbackQuery, state: FSMContext):
             pass
 
 
-# ==================== زرین‌پال ====================
+# ==================== زیبال ====================
 
-@router.callback_query(F.data.startswith("payment_method:zarinpal:"))
-async def handle_zarinpal_payment(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data.startswith("payment_method:zibal:"))
+async def handle_ZIBAL_payment(callback: CallbackQuery, state: FSMContext):
     """پرداخت با زرین‌پال"""
     await callback.answer()
 
@@ -263,10 +262,9 @@ async def handle_zarinpal_payment(callback: CallbackQuery, state: FSMContext):
         await callback.message.edit_text("⏳ در حال آماده‌سازی درگاه پرداخت...")
 
         payment_data = await create_payment(
-            base_url=settings.BACKEND_BASE_URL,
             chat_id=chat_id,
             product_id=product_id,
-            payment_method="zarinpal"
+            payment_method="zibal"
         )
 
         payment_id = payment_data.get("id")
@@ -274,6 +272,8 @@ async def handle_zarinpal_payment(callback: CallbackQuery, state: FSMContext):
         product_name = payment_data.get("product_name", "محصول")
         product_description = payment_data.get("product_description", "")
         amount = payment_data.get("amount", 0)
+        
+        logger.info(f"==============> {payment_url}")
 
         if not payment_url:
             await callback.message.edit_text(
@@ -284,7 +284,7 @@ async def handle_zarinpal_payment(callback: CallbackQuery, state: FSMContext):
             return
 
         text = (
-            f"💳 *پرداخت آنلاین - زرین‌پال*\n\n"
+            f"💳 *پرداخت آنلاین - زیبال*\n\n"
             f"📦 محصول: *{product_name}*\n"
         )
 
@@ -301,14 +301,14 @@ async def handle_zarinpal_payment(callback: CallbackQuery, state: FSMContext):
         text += (
             f"💰 مبلغ قابل پرداخت: *{amount:,} تومان*\n"
             f"🔢 شناسه پرداخت: `{payment_id}`\n\n"
-            f"🔐 پرداخت از طریق درگاه امن زرین‌پال\n"
+            f"🔐 پرداخت از طریق درگاه امن زیبال\n"
             f"✅ پس از پرداخت، وضعیت به صورت خودکار بررسی می‌شود."
         )
 
         sent_message = await callback.message.edit_text(
             text,
             parse_mode="Markdown",
-            reply_markup=get_payment_actions_keyboard(payment_id, "zarinpal", payment_url),
+            reply_markup=get_payment_actions_keyboard(payment_id, "zibal", payment_url),
             disable_web_page_preview=True
         )
 
@@ -327,7 +327,7 @@ async def handle_zarinpal_payment(callback: CallbackQuery, state: FSMContext):
             )
         )
 
-    except PaymentAPIError as e:
+    except BackendAPIError as e:
         logger.error(f"خطای API در زرین‌پال: {e.message}")
         try:
             await callback.message.edit_text(
@@ -366,7 +366,6 @@ async def check_payment_status_handler(callback: CallbackQuery, state: FSMContex
         chat_id = str(callback.from_user.id)
 
         status_data = await get_payment_status(
-            base_url=settings.BACKEND_BASE_URL,
             chat_id=chat_id,
             payment_id=payment_id
         )
@@ -422,7 +421,7 @@ async def check_payment_status_handler(callback: CallbackQuery, state: FSMContex
             reply_markup = None
         elif status == "pending":
             text += "⏳ در انتظار پرداخت.\n💡 لطفاً پرداخت را تکمیل کنید."
-            reply_markup = get_payment_actions_keyboard(payment_id, "zarinpal")
+            reply_markup = get_payment_actions_keyboard(payment_id, "zibal")
         else:
             reply_markup = None
 
@@ -432,7 +431,7 @@ async def check_payment_status_handler(callback: CallbackQuery, state: FSMContex
             reply_markup=reply_markup
         )
 
-    except PaymentAPIError as e:
+    except BackendAPIError as e:
         logger.error(f"خطای API در بررسی وضعیت: {e.message}")
         try:
             await callback.message.answer(f"❌ {e.message}")
@@ -471,7 +470,6 @@ async def handle_card_to_card_payment(callback: CallbackQuery, state: FSMContext
         await callback.message.edit_text("⏳ در حال آماده‌سازی...")
 
         payment_data = await create_payment(
-            base_url=settings.BACKEND_BASE_URL,
             chat_id=chat_id,
             product_id=product_id,
             payment_method="card_to_card"
@@ -521,7 +519,7 @@ async def handle_card_to_card_payment(callback: CallbackQuery, state: FSMContext
 
         await callback.message.edit_text(text, parse_mode="Markdown")
 
-    except PaymentAPIError as e:
+    except BackendAPIError as e:
         logger.error(f"خطای API در کارت به کارت: {e.message}")
         try:
             await callback.message.edit_text(
@@ -557,7 +555,6 @@ async def handle_receipt_photo(message: Message, state: FSMContext):
         await message.answer("⏳ در حال ارسال رسید به سیستم...")
 
         await submit_card_receipt(
-            base_url=settings.BACKEND_BASE_URL,
             chat_id=chat_id,
             payment_id=payment_id,
             receipt_file_id=file_id,
@@ -578,7 +575,7 @@ async def handle_receipt_photo(message: Message, state: FSMContext):
         await message.answer(success_text, parse_mode="Markdown")
         await state.clear()
 
-    except PaymentAPIError as e:
+    except BackendAPIError as e:
         logger.error(f"خطای API در ارسال رسید: {e.message}")
         await message.answer(
             f"❌ خطا در ثبت رسید\n\n{e.message}\n\n"
@@ -622,7 +619,6 @@ async def handle_bale_wallet_payment(callback: CallbackQuery, state: FSMContext)
         chat_id = str(callback.from_user.id)
 
         payment_data = await create_payment(
-            base_url=settings.BACKEND_BASE_URL,
             chat_id=chat_id,
             product_id=product_id,
             payment_method="bale_wallet"
@@ -648,7 +644,7 @@ async def handle_bale_wallet_payment(callback: CallbackQuery, state: FSMContext)
         except Exception as delete_error:
             logger.warning(f"عدم امکان حذف پیام انتخاب روش پرداخت: {delete_error}")
 
-    except PaymentAPIError as e:
+    except BackendAPIError as e:
         logger.error(f"خطای API در کیف پول بله: {e.message}")
         try:
             await callback.message.edit_text(
@@ -717,7 +713,6 @@ async def handle_successful_payment(message: Message):
             )
 
         response = await confirm_bale_wallet_payment(
-            base_url=settings.BACKEND_BASE_URL,
             chat_id=str(message.chat.id),
             payment_id=str(payment_id) if payment_id is not None else None,
             telegram_payment_charge_id=telegram_payment_charge_id,
@@ -734,7 +729,6 @@ async def handle_successful_payment(message: Message):
             if payment_id is not None:
                 try:
                     status_data = await get_payment_status(
-                        base_url=settings.BACKEND_BASE_URL,
                         chat_id=str(message.chat.id),
                         payment_id=payment_id
                     )
@@ -789,7 +783,7 @@ async def handle_successful_payment(message: Message):
                 "لطفاً چند لحظه صبر کنید."
             )
 
-    except PaymentAPIError as e:
+    except BackendAPIError as e:
         logger.error(f"❌ خطای API در تایید پرداخت: {e.message}")
         await message.answer(
             f"⚠️ خطا در تایید پرداخت:\n\n{e.message}\n\n"

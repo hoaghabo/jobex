@@ -203,17 +203,19 @@ SIMPLE_JWT = {
 }
 
 
-ZARINPAL_MERCHANT_ID = "4f629634-9450-4884-8406-2102e5e1d4bd"
+ZIBAL_MERCHANT_ID = "69e37309c990832396da8b3c"
 # ZARINPAL_MERCHANT_ID = "00000000-0000-0000-0000-000000000000"
 ZARINPAL_SANDBOX = False
 
-ZARINPAL_CALLBACK_URL = "http://localhost:8000/api/billing/payments/zarinpal/callback/"
+# ZIBAL_CALLBACK_URL = "http://localhost:8000/api/billing/payments/zarinpal/callback/"
+
+ZIBAL_CALLBACK_URL = "https://jobex123.com/api/billing/payments/zarinpal/callback/"
 
 BILLING_DEFAULT_CURRENCY = "IRR"
 
 BILLING_CARD_TO_CARD_NUMBER = "6037-0000-0000-0000"
 BILLING_CARD_TO_CARD_OWNER = "نام صاحب کارت"
-ZARINPAL_SANDBOX = True
+ZIBAL_SANDBOX = True
 
 BACKEND_BOT_API_TOKEN = os.getenv('BACKEND_BOT_API_TOKEN', '----------------')
 BALE_BOT_TOKEN = os.getenv('BALE_BOT_TOKEN', '-----------------')

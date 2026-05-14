@@ -26,8 +26,30 @@ class AccountManager(BaseUserManager):
 
 
 class Accounts(AbstractUser):
+    class GenderChoices(models.TextChoices):
+        MALE = "male", "مرد"
+        FEMALE = "female", "زن"
+        OTHER = "other", "سایر"
+
     username = None
-    phone_number = models.CharField(max_length=15, unique=True)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    display_name = models.CharField(max_length=255, blank=True)
+    phone_number = models.CharField(max_length=15, unique=True, verbose_name="شماره همراه")
+    email = models.EmailField(blank=True, null=True)
+    contact_number = models.CharField(max_length=15, blank=True, null=True, verbose_name="شماره تماس")
+    gender = models.CharField(
+        max_length=10,
+        choices=GenderChoices.choices,
+        blank=True,
+        null=True,
+        verbose_name="جنسیت"
+    )
+    province = models.CharField(max_length=100, blank=True, null=True, verbose_name="استان")
+    day_birthdate = models.IntegerField(null=True, blank=True)
+    month_birthdate = models.IntegerField(null=True, blank=True)
+    year_birthdate = models.IntegerField(null=True, blank=True)
+
     is_phone_verified = models.BooleanField(default=False)
     is_registration_completed = models.BooleanField(default=False)
     is_bot_bale_member = models.BooleanField(default=False)

@@ -22,7 +22,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "currency",
             "description",
 
-            "authority",
+            "trackId",
             "payment_url",
             "ref_id",
             "card_pan",
@@ -65,7 +65,7 @@ class CreatePaymentSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     amount = serializers.IntegerField(required=False, allow_null=True)
 
-    # Zarinpal optional fields
+    # ZIBAL optional fields
     mobile = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)
     
@@ -87,7 +87,7 @@ class CreatePaymentResponseSerializer(serializers.ModelSerializer):
             "currency",
             "product_id",
             "product_data",
-            "authority",
+            "trackId",
             "payment_url",
             "card_to_card",
             "bale_wallet",
@@ -126,8 +126,8 @@ class CreatePaymentResponseSerializer(serializers.ModelSerializer):
             }
 
 
-class ZarinpalCallbackSerializer(serializers.Serializer):
-    Authority = serializers.CharField()
+class ZibalCallbackSerializer(serializers.Serializer):
+    trackId = serializers.CharField()
     Status = serializers.CharField()
 
 
@@ -197,7 +197,7 @@ class PaymentStatusSerializer(serializers.ModelSerializer):
             "amount",
             "currency",
 
-            "authority",
+            "trackId",
             "payment_url",
             "ref_id",
 

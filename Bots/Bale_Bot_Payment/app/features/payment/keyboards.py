@@ -6,8 +6,8 @@ def get_payment_methods_keyboard(order_id: int) -> InlineKeyboardMarkup:
     """کیبورد انتخاب روش پرداخت"""
     keyboard = [
         [InlineKeyboardButton(
-            text="💳 زرین‌پال",
-            callback_data=f"payment_method:zarinpal:{order_id}"
+            text="💳 زیبال",
+            callback_data=f"payment_method:zibal:{order_id}"
         )],
         [InlineKeyboardButton(
             text="🏦 کارت به کارت",
@@ -29,8 +29,10 @@ def get_payment_actions_keyboard(payment_id: int, method: str, payment_url: str 
     """کیبورد اقدامات پس از ایجاد پرداخت"""
     keyboard = []
     
+    print(f"=========== payment_URL {payment_url}")
+    
     # اگر لینک پرداخت موجود باشه، دکمه URL اضافه کن
-    if payment_url and method in ["zarinpal", "bale_wallet"]:
+    if payment_url and method in ["zibal", "bale_wallet"]:
         keyboard.append([InlineKeyboardButton(
             text="💳 پرداخت آنلاین",
             url=payment_url

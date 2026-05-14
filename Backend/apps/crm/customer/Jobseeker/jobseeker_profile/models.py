@@ -1,29 +1,16 @@
 from django.db import models
-from apps.accounts.models import Accounts
 from django.contrib.postgres.fields import ArrayField
 
-class JobSeekerProfile(models.Model):
+from apps.accounts.models import Accounts
 
+
+class JobSeekerProfile(models.Model):
     class DegreeChoices(models.TextChoices):
         DIPLOMA = "diploma", "دیپلم"
         ASSOCIATE = "associate", "کاردانی"
         BACHELOR = "bachelor", "کارشناسی"
         MASTER = "master", "کارشناسی ارشد"
         PHD = "phd", "دکتری"
-
-    class CityChoices(models.TextChoices):
-        TEHRAN = "tehran", "تهران"
-        ALBORZ = "alborz", "البرز"
-        YAZD = "yazd", "یزد"
-        AHVAZ = "ahvaz", "اهواز"
-        MAZANDARAN = "mazandaran", "مازندران"
-        KERMAN = "kerman", "کرمان"
-        MASHHAD = "mashhad", "مشهد"
-        GILAN = "gilan", "گیلان"
-        SHIRAZ = "shiraz", "شیراز"
-        TABRIZ = "tabriz", "تبریز"
-        QAZVIN = "qazvin", "قزوین"
-        OTHER = "other", "سایر"
 
     class WorkEnthusiastGroupChoices(models.TextChoices):
         MANAGEMENT = "management", "حوزه مدیریت"
@@ -49,69 +36,59 @@ class JobSeekerProfile(models.Model):
         SOUTH = "south", "جنوب"
         SUBURB = "suburb", "حومه"
 
-    class CampaignRequestChoices(models.TextChoices):
-        MESSENGER = "messenger", "ارسال پیام‌رسان (واتساپ، تلگرام، موبایل بله)"
-        EMAIL = "email", "ارسال ایمیل"
-        SMS = "sms", "ارسال پیامک"
-        PUSH_NOTIFICATION = "push_notification", "ارسال پوش نوتیفیکیت"
-        JOBEX_CHANNELS = "jobex_channels", "کانال‌های ارتباطی جابکس"
-        COMBINED = "combined", "ترکیب (بالاترین بازخورد)"
-
-    account = models.OneToOneField(Accounts, on_delete=models.CASCADE)
-    fullname = models.CharField(max_length=200, blank=True)
-    phone_number = models.CharField(max_length=20, null=False, blank=False)
-
-    city = models.CharField(
-        max_length=20,
-        choices=CityChoices.choices,
-        blank=True,
-        null=True
+    account = models.OneToOneField(
+        Accounts,
+        on_delete=models.CASCADE,
+        related_name="job_seeker_profile",
+        verbose_name="حساب کاربری"
     )
-
-    day_birthdate = models.IntegerField(null=True, blank=True)
-    month_birthdate = models.IntegerField(null=True, blank=True)
-    year_birthdate = models.IntegerField(null=True, blank=True)
 
     degree = models.CharField(
         max_length=20,
         choices=DegreeChoices.choices,
         blank=True,
-        null=True
+        verbose_name="مدرک تحصیلی"
     )
-
-    email = models.EmailField(blank=True, null=True)
 
     work_enthusiasts = ArrayField(
-        models.CharField(
-        max_length=30,
-        choices=WorkEnthusiastGroupChoices.choices,
+        base_field=models.CharField(
+            max_length=30,
+            choices=WorkEnthusiastGroupChoices.choices,
+        ),
+        default=list,
         blank=True,
-        null=True,
-        default=list
-    )
+        verbose_name="علاقه‌مندی‌های شغلی"
     )
 
     salary_range = models.CharField(
         max_length=10,
         choices=SalaryRangeChoices.choices,
         blank=True,
-        null=True
+        verbose_name="بازه حقوق درخواستی"
     )
 
     work_location_priority = models.CharField(
         max_length=20,
         choices=WorkLocationPriorityChoices.choices,
         blank=True,
-        null=True
+        verbose_name="اولویت محل کار"
     )
 
-    campaign_request = ArrayField(models.CharField(
-        max_length=30,
-        choices=CampaignRequestChoices.choices,
-        blank=True,
-        null=True,
-        default=list
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="تاریخ ایجاد"
     )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="تاریخ بروزرسانی"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "پروفایل کارجو"
+        verbose_name_plural = "پروفایل کارجویان"
+
+    def __str__(self):
+        return f"پروفایل کارجوی {self.account.display_name or self.account.phone_number}"
+
+

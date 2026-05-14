@@ -5,7 +5,7 @@ from django.utils import timezone
 
 class Payment(models.Model):
     class Gateway(models.TextChoices):
-        ZARINPAL = "zarinpal", "زرین‌پال"
+        ZIBAL = "zibal", "زیبال"
         CARD_TO_CARD = "card_to_card", "کارت به کارت"
         BALE_WALLET = "bale_wallet", "کیف پول بله"
 
@@ -60,8 +60,8 @@ class Payment(models.Model):
     currency = models.CharField(max_length=16, default="IRR")
     description = models.TextField(blank=True)
 
-    # Zarinpal
-    authority = models.CharField(max_length=255, blank=True, db_index=True)
+    # Zibal
+    trackId = models.CharField(max_length=255, blank=True, db_index=True)
     payment_url = models.URLField(max_length=1000, blank=True)
     ref_id = models.CharField(max_length=255, blank=True, db_index=True)
     card_pan = models.CharField(max_length=64, blank=True)
@@ -115,7 +115,7 @@ class Payment(models.Model):
         indexes = [
             models.Index(fields=["gateway", "status"]),
             models.Index(fields=["product_id"]),
-            models.Index(fields=["authority"]),
+            models.Index(fields=["trackId"]),
             models.Index(fields=["ref_id"]),
             models.Index(fields=["wallet_transaction_id"]),
         ]
