@@ -92,10 +92,8 @@ class JobSeekerChoicesAPIView(APIView):
     def get(self, request, *args, **kwargs):
         data = {
             "degree": serialize_choices(JobSeekerProfile.DegreeChoices.choices),
-            "city": serialize_choices(JobSeekerProfile.CityChoices.choices),
             "work_enthusiasts": serialize_choices(JobSeekerProfile.WorkEnthusiastGroupChoices.choices),
             "salary_range": serialize_choices(JobSeekerProfile.SalaryRangeChoices.choices),
             "work_location_priority": serialize_choices(JobSeekerProfile.WorkLocationPriorityChoices.choices),
-            "campaign_request": serialize_choices(JobSeekerProfile.CampaignRequestChoices.choices),
-        }
+            }
         return Response(data)

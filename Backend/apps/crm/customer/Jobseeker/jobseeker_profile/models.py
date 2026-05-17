@@ -73,6 +73,15 @@ class JobSeekerProfile(models.Model):
         blank=True,
         verbose_name="اولویت محل کار"
     )
+    
+    resume_file_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name="شناسه فایل رزومه در تلگرام"
+    )
+
+    
 
     created_at = models.DateTimeField(
         auto_now_add=True,

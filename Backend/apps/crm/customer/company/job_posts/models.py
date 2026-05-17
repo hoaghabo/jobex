@@ -1,5 +1,6 @@
 from django.db import models
 from apps.crm.customer.company.company_profile.models import CompanyProfile
+from apps.crm.models import CompanyMembership   # مسیر را با پروژه خودت تنظیم کن
 
 
 class JobPosting(models.Model):
@@ -116,6 +117,15 @@ class JobPosting(models.Model):
         verbose_name="شرکت"
     )
 
+    created_by_membership = models.ForeignKey(
+        "crm.CompanyMembership",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_job_postings",
+        verbose_name="ایجادکننده آگهی"
+    )
+
     job_title = models.CharField(
         max_length=100,
         choices=JobTitleChoices.choices,
@@ -200,9 +210,9 @@ class JobPosting(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.get_job_title_display()
-
     class Meta:
         verbose_name = "آگهی شغلی"
         verbose_name_plural = "آگهی‌های شغلی"
+
+    def __str__(self):
+        return self.get_job_title_display()

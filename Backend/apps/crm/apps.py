@@ -6,5 +6,5 @@ class CrmConfig(AppConfig):
     
     def ready(self):
         # import apps.crm.signals 
-        import apps.crm.customer.company.company_profile.signals
+        # import apps.crm.customer.company.company_profile.signals
         import apps.crm.customer.Jobseeker.jobseeker_profile.signals

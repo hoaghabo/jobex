@@ -25,6 +25,15 @@ class AccountManager(BaseUserManager):
         return self.create_user(phone_number, password, **extra_fields)
 
 
+class City(models.Model):
+    slug = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+
 class Accounts(AbstractUser):
     class GenderChoices(models.TextChoices):
         MALE = "male", "مرد"
@@ -45,7 +54,14 @@ class Accounts(AbstractUser):
         null=True,
         verbose_name="جنسیت"
     )
-    province = models.CharField(max_length=100, blank=True, null=True, verbose_name="استان")
+    city = models.ForeignKey(
+        City,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accounts",
+        verbose_name="شهر"
+    )
     day_birthdate = models.IntegerField(null=True, blank=True)
     month_birthdate = models.IntegerField(null=True, blank=True)
     year_birthdate = models.IntegerField(null=True, blank=True)

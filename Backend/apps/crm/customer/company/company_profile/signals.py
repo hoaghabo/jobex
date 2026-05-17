@@ -17,3 +17,7 @@ def set_company_member(sender, instance, created, **kwargs):
         Accounts.objects.filter(pk=instance.account_id).update(
             is_company_member=True
         )
+
+
+
+

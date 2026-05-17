@@ -25,8 +25,8 @@ def get_main_menu_keyboard(
     if state == "starter":
         keyboard.append(
             [
-                KeyboardButton(text="کارجو"),
                 KeyboardButton(text="کارفرما"),
+                KeyboardButton(text="کارجو"),
             ]
         )
 

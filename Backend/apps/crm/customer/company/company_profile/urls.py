@@ -5,30 +5,50 @@ from .views import (
     MyCompanyProfileDetailsAPIView,
     AdminCompanyProfileListAPIView,
     AdminCompanyProfileDetailAPIView,
-    CompanyProfileChoicesAPIView
+    CompanyChoicesAPIView,
+    MyCompanyProfileDetailAPIView
 )
 
 urlpatterns = [
+
+    # user endpoints
     path(
         "me/",
         MyCompanyProfileDetailsAPIView.as_view(),
         name="company-profile-me",
     ),
+    
     path(
-        "",
+    "me/<int:pk>/",
+    MyCompanyProfileDetailAPIView.as_view(),
+    name="company-profile-me-detail",
+    ),
+
+
+    path(
+        "register/",
         CompanyProfileRegisterAPIView.as_view(),
         name="company-profile-create",
     ),
+    
+
+    # admin endpoints
     path(
         "admin/",
         AdminCompanyProfileListAPIView.as_view(),
         name="admin-company-profile-list",
     ),
+
     path(
         "admin/<int:pk>/",
         AdminCompanyProfileDetailAPIView.as_view(),
         name="admin-company-profile-detail",
     ),
-    path("choices/", CompanyProfileChoicesAPIView.as_view(), name="Company-Profile-Choices"),
-
+    
+        # admin endpoints
+    path(
+        "choices/",
+        CompanyChoicesAPIView.as_view(),
+        name="company-choices-list",
+    ),
 ]

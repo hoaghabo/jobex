@@ -1,7 +1,6 @@
 from django.db import models
 
 
-
 class CompanyProfile(models.Model):
     class OrganizationSizeChoices(models.TextChoices):
         FROM_5_TO_50 = "5_50", "۵ تا ۵۰ نفر"
@@ -9,93 +8,74 @@ class CompanyProfile(models.Model):
         FROM_200_TO_500 = "200_500", "۲۰۰ تا ۵۰۰ نفر"
         MORE_THAN_500 = "500_plus", "۵۰۰ نفر به بالا"
 
-    class CityChoices(models.TextChoices):
-        TEHRAN = "tehran", "تهران"
-        ALBORZ = "alborz", "البرز"
-        YAZD = "yazd", "یزد"
-        AHVAZ = "ahvaz", "اهواز"
-        MAZANDARAN = "mazandaran", "مازندران"
-        KERMAN = "kerman", "کرمان"
-        MASHHAD = "mashhad", "مشهد"
-        GILAN = "gilan", "گیلان"
-        SHIRAZ = "shiraz", "شیراز"
-        TABRIZ = "tabriz", "تبریز"
-        QAZVIN = "qazvin", "قزوین"
-        OTHER = "other", "سایر"
-
-    company_membership = models.ForeignKey(
+    company_membership = models.OneToOneField(
         "crm.CompanyMembership",
         on_delete=models.CASCADE,
-        related_name="company_profiles",
+        related_name="company_profile",
         null=True,
         blank=True,
+        verbose_name="عضویت شرکت",
     )
-
 
 
     company_name = models.CharField(
         max_length=200,
         blank=True,
-        verbose_name="نام شرکت"
+        verbose_name="نام شرکت",
     )
 
-    phone_number = models.CharField(
-        max_length=20,
-        verbose_name="شماره موبایل"
-    )
-
-    email = models.EmailField(
-        blank=True,
-        verbose_name="ایمیل"
-    )
 
     organization_size = models.CharField(
         max_length=20,
         choices=OrganizationSizeChoices.choices,
         verbose_name="ابعاد سازمان",
         blank=True,
+        null=True,
     )
 
-    city = models.CharField(
-        max_length=20,
-        choices=CityChoices.choices,
+    city = models.ForeignKey(
+        "accounts.City",
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        verbose_name="شهر"
+        related_name="company_profiles",
+        verbose_name="شهر",
     )
 
     industry = models.CharField(
         max_length=255,
-        verbose_name="صنعت/حوزه فعالیت سازمان"
+        verbose_name="صنعت/حوزه فعالیت سازمان",
     )
 
     full_address = models.TextField(
-        verbose_name="آدرس کامل سازمان"
+        verbose_name="آدرس کامل سازمان",
     )
 
     website = models.URLField(
         blank=True,
-        verbose_name="آدرس وب‌سایت سازمان"
+        null=True,
+        verbose_name="آدرس وب‌سایت سازمان",
     )
 
     landline_phone = models.CharField(
         max_length=20,
         blank=True,
-        verbose_name="شماره تلفن ثابت"
+        verbose_name="شماره تلفن ثابت",
     )
 
     is_registration_complete = models.BooleanField(
         default=False,
-        verbose_name="ثبت‌نام کامل شده"
+        verbose_name="ثبت‌نام کامل شده",
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name="تاریخ ایجاد"
+        verbose_name="تاریخ ایجاد",
     )
 
     updated_at = models.DateTimeField(
         auto_now=True,
-        verbose_name="تاریخ بروزرسانی"
+        verbose_name="تاریخ بروزرسانی",
     )
 
     class Meta:
@@ -105,8 +85,6 @@ class CompanyProfile(models.Model):
     def check_registration_complete(self):
         required_fields = [
             "company_name",
-            "phone_number",
-            "email",
             "organization_size",
             "city",
             "industry",
@@ -133,4 +111,5 @@ class CompanyProfile(models.Model):
         return self.is_registration_complete
 
     def __str__(self):
-        return self.company_name or self.phone_number
+        return self.company_name or f"CompanyProfile {self.pk}"
+

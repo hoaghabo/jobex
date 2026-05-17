@@ -10,12 +10,18 @@ from apps.crm.customer.company.job_posts.views import (
 
 urlpatterns = [
     path(
+        "choices/",
+        JobPostingChoicesAPIView.as_view(),
+        name="job-posting-choices",
+    ),
+
+    path(
         "admin/job-posts/",
         AdminJobPostingListCreateAPIView.as_view(),
         name="admin-job-posting-list-create",
     ),
     path(
-        "admin//<int:pk>/",
+        "admin/job-posts/<int:pk>/",
         AdminJobPostingDetailAPIView.as_view(),
         name="admin-job-posting-detail",
     ),
@@ -29,11 +35,5 @@ urlpatterns = [
         "<int:pk>/",
         MyCompanyJobPostingDetailAPIView.as_view(),
         name="my-company-job-posting-detail",
-    ),
-
-    path(
-        "choices/",
-        JobPostingChoicesAPIView.as_view(),
-        name="job-posting-choices",
     ),
 ]

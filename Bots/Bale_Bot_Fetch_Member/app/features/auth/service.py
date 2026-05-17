@@ -1,10 +1,22 @@
 from aiogram.types import Message
 
+import asyncio
 from app.infrastructure.backend.client import BackendAPIError
+from app.infrastructure.backend.client import BackendClient
 from app.infrastructure.backend.bot_user_api import (
     get_user_status,
     register_or_update_user,
 )
+from app.config import settings
+
+client = BackendClient()
+
+
+def _build_bot_headers() -> dict:
+    return {
+        "X-Bot-Token": settings.BACKEND_BOT_API_TOKEN,
+        "Content-Type": "application/json",
+    }
 
 
 class UserAccessResult:
@@ -99,3 +111,59 @@ async def check_user_access(message: Message) -> UserAccessResult:
         return status_result
 
     return status_result
+
+
+async def get_account_list_choices(choices_name):
+    res = await client.get("/api/auth/choices/")
+    res = res.get(choices_name)
+    return res
+
+
+async def get_city_list():
+    res = await client.get("/api/auth/city/")
+    return res
+
+
+async def registered_or_update_account(payload: dict):
+    res = await client.post(
+        "api/auth/registered/",
+        json=payload,
+        headers=_build_bot_headers(),
+    )
+    return res
+
+
+async def registered_or_update_balebotprofile(payload: dict):
+    res = await client.post(
+        "api/bots/bale_profile/register/",
+        json=payload,
+        headers=_build_bot_headers(),
+    )
+    return res
+
+
+async def main():
+    payload = {
+        "first_name": "Hossein",
+        "last_name": "Haji",
+        "phone_number": "09123456789",
+        "email": "hossein@example.com",
+        "gender": "male",
+        "city": "tehran",
+        "day_birthdate": 12,
+        "month_birthdate": 7,
+        "year_birthdate": 1384,
+    }
+
+    try:
+        result = await registered_or_update_account(payload)
+        print("REGISTER/UPDATE RESULT:")
+        print(result)
+    except BackendAPIError as e:
+        print("BackendAPIError:", str(e))
+    except Exception as e:
+        print("Unexpected Error:", str(e))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
